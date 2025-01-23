@@ -69,7 +69,7 @@
             <!-- courier_user_id y auto_in_transit después del campo tracking_url -->
             <xpath expr="//field[@name='delivery_type']" position="after">
                 <field name="courier_user_id" string="Usuario Courier" options="{'no_create': True}"/>
-                <field name="auto_in_transit" widget="boolean_toggle" string="Despacho Inmediato"/>
+                <field name="auto_in_transit" widget="boolean_toggle" string="Despacho Inmediato" options="{'on_text': 'Yes', 'off_text': 'No'}"/>
             </xpath>
         </field>
     </record>

@@ -95,12 +95,12 @@
                             type="object"
                             string="Entregar (Old)"
                             class="btn-secondary"
-                            modifiers="{'invisible':[('state','!=','in_transit')]}"/>
+                            attrs="{'invisible': [('state', '!=', 'in_transit')]}"/>
                     <button name="action_fail"
                             type="object"
                             string="No Entregado (Old)"
                             class="btn-danger"
-                            modifiers="{'invisible':[('state','!=','in_transit')]}"/>
+                            attrs="{'invisible': [('state', '!=', 'in_transit')]}"/>
                     <button name="action_cancel"
                             type="object"
                             string="Cancelar"
