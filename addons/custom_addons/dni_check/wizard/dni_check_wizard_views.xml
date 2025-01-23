@@ -10,7 +10,7 @@
                     <field name="nombres"/>
                     <field name="apellido_paterno"/>
                     <field name="apellido_materno"/>
-                    <field name="mensaje" invisible="not mensaje"/>
+                    <field name="mensaje" attrs="{'invisible': [('mensaje','=',False)]}"/>
                     <field name="sale_id" invisible="1"/>
                 </group>
                 <footer>
