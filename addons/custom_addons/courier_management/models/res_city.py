@@ -25,13 +25,13 @@ class ResCity(models.Model):
 
         if name:
             try:
-                json_search = json.dumps({"en_US": name})
+                name_json = json.dumps({"en_US": name})
                 domain = [
                     '|',
-                    ('name', operator, name),
-                    ('name', 'ilike', json_search)
+                    ('name', operator, name_json),
+                    ('name', operator, name)
                 ]
-            except:
+            except json.JSONDecodeError:
                 domain = [('name', operator, name)]
 
         state_id = self._context.get('state_id')
@@ -41,9 +41,8 @@ class ResCity(models.Model):
             else:
                 domain = [('state_id', '=', state_id)]
 
-        final_domain = domain + args if args else domain
-        return self._search(final_domain, limit=limit, access_rights_uid=name_get_uid)
-        
+        return self._search(domain, limit=limit, access_rights_uid=name_get_uid)
+                
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         if self._context.get('state_id'):
