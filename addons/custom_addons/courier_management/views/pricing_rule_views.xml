@@ -111,7 +111,7 @@
         <field name="res_model">courier.pricing.rule</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_courier_pricing_rule_search"/>
-        <field name="context">{'search_default_active': 1}</field>
+        <field name="context">{"search_default_active": 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Crea tu primera regla de precio

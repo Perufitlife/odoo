@@ -81,10 +81,7 @@
         <field name="domain">['|', 
                             ('initial_status', '=', 'confirmed'),
                             ('initial_status', '=', 'reprogramado')]</field>
-        <field name="context">{
-            'search_default_delivery_today': 1,
-            'search_default_groupby_date': 1
-        }</field>
+        <field name="context">{"search_default_delivery_today": 1, "search_default_groupby_date": 1}</field>
         <field name="search_view_id" ref="view_dispatch_board_search"/>
     </record>
 
