@@ -19,8 +19,13 @@
                 <field name="initial_status"/>
                 
                 <!-- Agrupación y contadores -->
-                <progressbar field="initial_status" colors="{'confirmed':'success','despachado':'warning','in_transit':'info'}"/>
-
+                <progressbar field="initial_status"
+                    colors='{
+                        "confirmed": "success",
+                        "despachado": "warning",
+                        "in_transit": "info"
+                    }'
+                />
                 
                 <!-- Plantilla para las tarjetas -->
                 <templates>
@@ -42,10 +47,13 @@
                                 </div>
                                 <div class="o_kanban_record_bottom mt-3">
                                     <div class="oe_kanban_bottom_right">
-                                        <field name="initial_status"
-                                            widget="label_selection"
-                                            options="{'classes':{'confirmed':'success','despachado':'warning','in_transit':'info'}}"
-                                        />
+                                        <field name="initial_status" 
+                                               widget="label_selection" 
+                                               options="{'classes': {
+                                                   'confirmed': 'success',
+                                                   'despachado': 'warning',
+                                                   'in_transit': 'info'
+                                               }}"/>
                                     </div>
                                 </div>
                             </div>
