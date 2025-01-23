@@ -65,14 +65,27 @@ class ResCity(models.Model):
         return self._search(domain, limit=limit, access_rights_uid=name_get_uid)
 
     @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
-        """
-        Sobrescribimos search_read para filtrar por state_id
-        si viene en el contexto (ej: en vistas donde queremos
-        que solo se muestren ciudades de un state_id concreto).
-        """
-        if self._context.get('state_id'):
-            domain = domain or []
-            domain.append(('state_id', '=', self._context.get('state_id')))
-        return super(ResCity, self).search_read(domain=domain, fields=fields,
-                                               offset=offset, limit=limit, order=order)
+    def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
+        args = args or []
+        domain = []
+
+        if name:
+            domain = [
+                '|',
+                ('name', operator, name),
+                ('name', 'ilike', f'{{"en_US": "{name}"}}')
+            ]
+
+        state_id = self._context.get('state_id')
+        if state_id:
+            state_domain = [('state_id', '=', state_id)]
+            if domain:
+                domain = ['&'] + state_domain + domain
+            else:
+                domain = state_domain
+
+        if domain and args:
+            domain = domain + args
+
+        return self._search(domain, limit=limit, access_rights_uid=name_get_uid)
+
