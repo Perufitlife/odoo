@@ -24,10 +24,11 @@ class ResCity(models.Model):
         domain = []
 
         if name:
+            json_search = json.dumps({"en_US": name})
             domain = [
                 '|',
                 ('name', operator, name),
-                ('name', 'ilike', f'{{"en_US": "{name}"}}')
+                ('name', 'ilike', json_search)
             ]
 
         state_id = self._context.get('state_id')
@@ -38,9 +39,8 @@ class ResCity(models.Model):
                 domain = [('state_id', '=', state_id)]
 
         final_domain = domain + args if args else domain
-
         return self._search(final_domain, limit=limit, access_rights_uid=name_get_uid)
-
+        
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
         if self._context.get('state_id'):
