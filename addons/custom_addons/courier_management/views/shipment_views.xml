@@ -1,234 +1,269 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- MENÚ RAÍZ -->
+    <!-- Menús organizados jerárquicamente -->
     <menuitem id="menu_courier_root"
               name="Courier"
               web_icon="courier_management,static/description/icon.png"
               sequence="50"/>
 
-    <!-- SUBMENÚ Operaciones -->
     <menuitem id="menu_courier_operations"
               name="Operaciones"
               parent="menu_courier_root"
               sequence="10"/>
               
-    <!-- SUBMENÚ Configuración -->
     <menuitem id="menu_courier_config"
               name="Configuración"
               parent="menu_courier_root"
               sequence="99"/>
 
-    <!-- ************************************************************
-         1) VISTAS (search, list, form) DE courier.shipment
-       ************************************************************ -->
-    <!-- VISTA DE BÚSQUEDA -->
+    <!-- Vista de Búsqueda Optimizada -->
     <record id="view_courier_shipment_search" model="ir.ui.view">
         <field name="name">courier.shipment.search</field>
         <field name="model">courier.shipment</field>
         <field name="arch" type="xml">
             <search>
+                <!-- Campos de búsqueda prioritarios -->
                 <field name="name"/>
+                <field name="tracking_code"/>
                 <field name="sale_order_id"/>
                 <field name="partner_id"/>
                 <field name="carrier_id"/>
                 <field name="district_id"/>
-                <separator/>
-                <filter string="En Tránsito"
-                        name="in_transit"
+
+                <!-- Filtros comunes -->
+                <filter name="my_shipments" 
+                        string="Mis Envíos" 
+                        domain="[('user_id', '=', uid)]"/>
+                <filter name="today" 
+                        string="Hoy" 
+                        domain="[('shipping_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                
+                <!-- Filtros por estado -->
+                <filter name="draft" 
+                        string="Borradores" 
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="in_transit" 
+                        string="En Tránsito" 
                         domain="[('state', '=', 'in_transit')]"/>
-                <filter string="Entregados"
-                        name="delivered"
+                <filter name="delivered" 
+                        string="Entregados" 
                         domain="[('state', '=', 'delivered')]"/>
-                <filter string="Pendientes de Liquidar"
-                        name="pending_settlement"
+                <filter name="failed" 
+                        string="No Entregados" 
+                        domain="[('state', '=', 'failed')]"/>
+                <filter name="pending_settlement" 
+                        string="Pendientes de Liquidar" 
                         domain="[('settlement_state', '=', 'pending')]"/>
+
+                <!-- Agrupaciones -->
                 <group expand="0" string="Agrupar Por">
-                    <filter string="Estado" name="state" context="{'group_by': 'state'}"/>
-                    <filter string="Courier" name="carrier" context="{'group_by': 'carrier_id'}"/>
-                    <filter string="Fecha de Programación" name="shipping_date" context="{'group_by': 'shipping_date'}"/>
+                    <filter name="group_state" 
+                            string="Estado" 
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_carrier" 
+                            string="Courier" 
+                            context="{'group_by': 'carrier_id'}"/>
+                    <filter name="group_date" 
+                            string="Fecha" 
+                            context="{'group_by': 'shipping_date:day'}"/>
+                    <filter name="group_district" 
+                            string="Distrito" 
+                            context="{'group_by': 'district_id'}"/>
                 </group>
+
+                <!-- Búsqueda avanzada -->
+                <searchpanel>
+                    <field name="carrier_id" string="Courier" enable_counters="1"/>
+                    <field name="state" string="Estado" enable_counters="1"/>
+                </searchpanel>
             </search>
         </field>
     </record>
 
-    <!-- VISTA DE LISTA -->
-    <record id="view_courier_shipment_list" model="ir.ui.view">
-        <field name="name">courier.shipment.list</field>
+    <!-- Vista de Lista Optimizada -->
+    <record id="view_courier_shipment_tree" model="ir.ui.view">
+        <field name="name">courier.shipment.tree</field>
         <field name="model">courier.shipment</field>
         <field name="arch" type="xml">
-            <tree>
+            <tree decoration-info="state == 'draft'"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-success="state == 'delivered'"
+                  decoration-warning="state == 'in_transit'"
+                  decoration-danger="state == 'failed'"
+                  multi_edit="1">
+                <field name="selected" widget="boolean_toggle"/>
                 <field name="name" decoration-bf="1"/>
-                <field name="sale_order_id"/>
+                <field name="tracking_code"/>
+                <field name="sale_order_id" optional="show"/>
                 <field name="partner_id"/>
                 <field name="carrier_id"/>
                 <field name="shipping_date"/>
-                <field name="delivery_date" required="1"/>
+                <field name="delivery_date"/>
                 <field name="district_id"/>
-                <field name="delivery_fee" widget="monetary"/>
-                <field name="state" widget="badge"/>
+                <field name="delivery_fee" widget="monetary" sum="Total"/>
+                <field name="state" widget="badge" 
+                       decoration-success="state == 'delivered'"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'in_transit'"
+                       decoration-danger="state == 'failed'"/>
                 <field name="currency_id" invisible="1"/>
+                <button name="action_schedule" 
+                        type="object" 
+                        string="Programar"
+                        attrs="{'invisible': [('state', '!=', 'draft')]}"
+                        class="btn btn-link"/>
             </tree>
         </field>
     </record>
 
-    <!-- VISTA DE FORMULARIO -->
+    <!-- Vista de Formulario Optimizada -->
     <record id="view_courier_shipment_form" model="ir.ui.view">
         <field name="name">courier.shipment.form</field>
         <field name="model">courier.shipment</field>
         <field name="arch" type="xml">
-            <form class="o_courier_form o_form_view">
+            <form>
                 <header>
-                    <field name="state" widget="statusbar"/>
+                    <!-- Barra de estado -->
+                    <field name="state" widget="statusbar" 
+                           statusbar_visible="draft,scheduled,in_transit,delivered"/>
 
-                    <!-- Botones existentes Odoo: Programar, En Tránsito, etc. -->
-                    <button name="action_schedule"
-                            type="object"
-                            string="Programar"
+                    <!-- Botones de acción principales -->
+                    <button name="action_schedule" 
+                            type="object" 
+                            string="Programar" 
                             class="btn-primary"
-                            modifiers="{'invisible':[('state','!=','draft')]}"/>
-                    <button name="action_in_transit"
-                            type="object"
-                            string="En Tránsito"
+                            attrs="{'invisible': [('state', '!=', 'draft')]}"/>
+                    
+                    <button name="action_in_transit" 
+                            type="object" 
+                            string="En Tránsito" 
                             class="btn-primary"
-                            modifiers="{'invisible':[('state','!=','scheduled')]}"/>
-                    <button name="action_deliver"
-                            type="object"
-                            string="Entregar (Old)"
-                            class="btn-secondary"
+                            attrs="{'invisible': [('state', '!=', 'scheduled')]}"/>
+
+                    <button name="action_entregado_nuevo" 
+                            type="object" 
+                            string="Entregar" 
+                            class="btn-success"
                             attrs="{'invisible': [('state', '!=', 'in_transit')]}"/>
-                    <button name="action_fail"
-                            type="object"
-                            string="No Entregado (Old)"
+
+                    <button name="action_no_entregado_nuevo" 
+                            type="object" 
+                            string="No Entregado" 
                             class="btn-danger"
                             attrs="{'invisible': [('state', '!=', 'in_transit')]}"/>
-                    <button name="action_cancel"
-                            type="object"
+
+                    <button name="action_reprogramar" 
+                            type="object" 
+                            string="Reprogramar" 
+                            attrs="{'invisible': [('state', 'not in', ['in_transit', 'scheduled'])]}"/>
+
+                    <button name="action_cancel" 
+                            type="object" 
                             string="Cancelar"
-                            modifiers="{'invisible':[('state','in',['delivered','failed','cancelled'])]}"/>
-                    <!-- Acción de imprimir etiquetas del wizard -->
-                    <button name="%(action_print_shipment_labels_wizard)d"
-                            type="action"
-                            string="Print Labels Wizard"
-                            class="btn-secondary"/>
-
-                    <!-- Botones adicionales -->
-                    <button name="action_reprogramar"
-                            type="object"
-                            string="Reprogramar"
-                            class="btn-secondary"
-                            modifiers="{'invisible':[('state','!=','in_transit')]}"/>
-                    <button name="action_entregado_nuevo"
-                            type="object"
-                            string="Entregado"
-                            class="btn-primary"
-                            modifiers="{'invisible':[('state','!=','in_transit')]}"/>
-                    <button name="action_no_entregado_nuevo"
-                            type="object"
-                            string="No Entregado"
-                            class="btn-danger"
-                            modifiers="{'invisible':[('state','!=','in_transit')]}"/>
-                    <button name="action_consultas"
-                            type="object"
-                            string="Consultas"
-                            class="btn-secondary"
-                            modifiers="{'invisible':[('state','!=','in_transit')]}"/>
+                            attrs="{'invisible': [('state', 'in', ['delivered','failed','cancelled'])]}"/>
                 </header>
 
                 <sheet>
+                    <!-- Campos de cabecera -->
                     <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                        <h2>
+                            <field name="tracking_code" readonly="1"/>
+                        </h2>
                     </div>
-                    <div class="o_courier_content">
+
+                    <!-- Contenido principal -->
+                    <group>
                         <group>
-                            <group>
-                                <field name="sale_order_id" modifiers="{'invisible':[('state','!=','draft')]}"/>
-                                <field name="carrier_id" modifiers="{'invisible':[('state','!=','draft')]}"/>
-                                <field name="shipping_date"/>
-                                <field name="delivery_date" readonly="1"/>
-                                <field name="tracking_code" readonly="1"/>
-                                <field name="district_id" modifiers="{'invisible':[('state','!=','draft')]}"/>
-                            </group>
-                            <group>
-                                <field name="partner_id" readonly="1"/>
-                                <field name="customer_street"/>
-                                <field name="customer_city"/>
-                                <field name="customer_state"/>
-                                <field name="delivery_fee" widget="monetary"/>
-                                <field name="actual_delivery_fee" widget="monetary"/>
-                                <field name="currency_id" invisible="1"/>
-                            </group>
+                            <field name="sale_order_id" 
+                                   attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                            <field name="carrier_id" 
+                                   attrs="{'readonly': [('state', '!=', 'draft')]}"/>
+                            <field name="shipping_date"/>
+                            <field name="delivery_date"/>
+                            <field name="district_id" 
+                                   attrs="{'readonly': [('state', '!=', 'draft')]}"/>
                         </group>
-                        <notebook>
-                            <page string="Productos" name="products">
-                                <field name="deliverable_lines" readonly="1">
-                                    <tree>
-                                        <field name="product_id"/>
-                                        <field name="product_uom_qty"/>
-                                        <field name="price_unit" widget="monetary"/>
-                                        <field name="price_subtotal" widget="monetary"/>
-                                        <field name="currency_id" invisible="1"/>
-                                    </tree>
-                                </field>
-                            </page>
-                            <page string="Notas" name="notes">
-                                <field name="notes" placeholder="Notas o comentarios sobre el envío..."/>
-                            </page>
-                        </notebook>
-                    </div>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="delivery_fee" widget="monetary"/>
+                            <field name="actual_delivery_fee" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+
+                    <!-- Pestañas -->
+                    <notebook>
+                        <page string="Productos" name="products">
+                            <field name="deliverable_lines" readonly="1">
+                                <tree>
+                                    <field name="product_id"/>
+                                    <field name="product_uom_qty"/>
+                                    <field name="price_unit" widget="monetary"/>
+                                    <field name="price_subtotal" widget="monetary"/>
+                                    <field name="currency_id" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Notas" name="notes">
+                            <field name="notes" placeholder="Notas o comentarios..."/>
+                        </page>
+                        <page string="Información Adicional" name="extra_info">
+                            <group>
+                                <field name="initial_status"/>
+                                <field name="user_id"/>
+                                <field name="selected"/>
+                            </group>
+                        </page>
+                    </notebook>
                 </sheet>
 
+                <!-- Área de mensajería -->
                 <div class="oe_chatter">
                     <field name="message_follower_ids" widget="mail_followers"/>
                     <field name="activity_ids" widget="mail_activity"/>
-                    <field name="message_ids" widget="mail_thread" options="{'display_log_button': True}"/>
+                    <field name="message_ids" widget="mail_thread"/>
                 </div>
             </form>
         </field>
     </record>
 
-    <!-- ************************************************************
-         2) ACCIÓN DE VENTANA (Act Window)
-       ************************************************************ -->
+    <!-- Acción Principal -->
     <record id="action_courier_shipment" model="ir.actions.act_window">
         <field name="name">Envíos</field>
         <field name="res_model">courier.shipment</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_courier_shipment_search"/>
+        <field name="context">{
+            'search_default_my_shipments': 1,
+            'search_default_today': 1
+        }</field>
         <field name="help" type="html">
-            <p>Crea tu primer envío</p>
-            <p>Registra los envíos para tus órdenes de venta y asígnalos a los couriers correspondientes.</p>
+            <p class="o_view_nocontent_smiling_face">
+                Crea tu primer envío
+            </p>
+            <p>
+                Registra los envíos para tus órdenes de venta y asígnalos 
+                a los couriers correspondientes.
+            </p>
         </field>
     </record>
 
-    <!-- ************************************************************
-         3) MENÚ que llama a action_courier_shipment
-       ************************************************************ -->
+    <!-- Menús -->
     <menuitem id="menu_courier_shipment"
               name="Envíos"
               parent="menu_courier_operations"
               action="action_courier_shipment"
               sequence="10"/>
 
-    <!-- ************************************************************
-         4) (OPCIONAL) Otros menús: Carriers, Pricing, etc.
-       ************************************************************ -->
-    <record id="action_courier_carrier" model="ir.actions.act_window">
-        <field name="name">Carriers</field>
-        <field name="res_model">delivery.carrier</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-
     <menuitem id="menu_courier_carrier"
               name="Carriers"
               parent="menu_courier_config"
               action="action_courier_carrier"
               sequence="10"/>
-
-    <record id="action_courier_pricing_rule" model="ir.actions.act_window">
-        <field name="name">Reglas de Precios</field>
-        <field name="res_model">courier.pricing.rule</field>
-        <field name="view_mode">tree,form</field>
-    </record>
 
     <menuitem id="menu_courier_pricing_rule"
               name="Reglas de Precios"

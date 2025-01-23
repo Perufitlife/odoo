@@ -1,61 +1,114 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Vista Kanban principal -->
+    <!-- Vista Kanban Optimizada -->
     <record id="view_courier_shipment_kanban" model="ir.ui.view">
         <field name="name">courier.shipment.kanban</field>
         <field name="model">courier.shipment</field>
+        <field name="priority">20</field>
         <field name="arch" type="xml">
-            <kanban default_group_by="carrier_id" 
-                    class="o_kanban_small_column" 
-                    records_draggable="0">
+            <kanban 
+                default_group_by="carrier_id" 
+                class="o_courier_kanban" 
+                records_draggable="0"
+                quick_create="false">
+                
+                <!-- Campos necesarios -->
                 <field name="carrier_id"/>
                 <field name="name"/>
                 <field name="partner_id"/>
-                <field name="pending_orders_count"/>
-                <field name="total_products"/>
-                <field name="total_to_collect"/>
+                <field name="courier_stats"/>
                 <field name="currency_id"/>
                 <field name="district_id"/>
                 <field name="initial_status"/>
+                <field name="delivery_date"/>
+                <field name="is_ready_for_dispatch"/>
                 
-                <!-- Agrupación y contadores -->
-                <progressbar field="initial_status"
+                <!-- Barra de progreso -->
+                <progressbar 
+                    field="initial_status" 
                     colors='{
                         "confirmed": "success",
                         "despachado": "warning",
-                        "in_transit": "info"
+                        "in_transit": "info",
+                        "delivered": "muted"
                     }'
+                    sum_field="order_amount_total"
                 />
                 
-                <!-- Plantilla para las tarjetas -->
+                <!-- Plantillas -->
                 <templates>
                     <t t-name="kanban-box">
-                        <div class="oe_kanban_global_click o_kanban_record">
-                            <div class="o_kanban_content">
-                                <div class="o_kanban_record_title">
-                                    <field name="name" class="fw-bold"/>
+                        <div t-attf-class="oe_kanban_global_click o_kanban_record_has_image_fill o_courier_kanban_card 
+                            #{record.is_ready_for_dispatch.raw_value ? 'bg-light-success' : ''}"
+                            data-toggle="tooltip">
+                            
+                            <!-- Cabecera -->
+                            <div class="o_kanban_card_header">
+                                <div class="o_kanban_card_header_title">
+                                    <field name="name" class="fw-bold fs-5"/>
                                 </div>
-                                <div class="o_kanban_record_subtitle mt-2">
-                                    <div class="text-muted">Distrito: <field name="district_id"/></div>
+                                <div class="o_kanban_card_header_right">
+                                    <field name="initial_status" 
+                                        widget="label_selection" 
+                                        options="{'classes': {
+                                            'confirmed': 'success',
+                                            'despachado': 'warning',
+                                            'in_transit': 'info',
+                                            'delivered': 'muted'
+                                        }}"/>
                                 </div>
-                                <div class="oe_kanban_details mt-2">
-                                    <div>Cliente: <field name="partner_id"/></div>
-                                    <div class="text-muted mt-2">
-                                        <span class="me-3">Productos: <field name="total_products"/></span>
-                                        <span>Total: <field name="total_to_collect" widget="monetary"/></span>
+                            </div>
+                            
+                            <!-- Contenido -->
+                            <div class="o_kanban_card_content">
+                                <!-- Info Cliente -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa fa-user me-2" role="img" aria-label="Cliente"/>
+                                    <field name="partner_id" class="fw-bold"/>
+                                </div>
+                                
+                                <!-- Info Distrito -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa fa-map-marker me-2" role="img" aria-label="Distrito"/>
+                                    <field name="district_id"/>
+                                </div>
+                                
+                                <!-- Fecha de Entrega -->
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fa fa-calendar me-2" role="img" aria-label="Fecha"/>
+                                    <field name="delivery_date" 
+                                           widget="datetime" 
+                                           options="{'format': 'DD/MM/YYYY HH:mm'}"/>
+                                </div>
+                                
+                                <!-- Estadísticas -->
+                                <div class="o_courier_stats row mt-3">
+                                    <div class="col">
+                                        <span class="o_stat_text">Productos</span>
+                                        <span class="o_stat_value" t-esc="record.courier_stats.value.total_products"/>
+                                    </div>
+                                    <div class="col">
+                                        <span class="o_stat_text">Total</span>
+                                        <span class="o_stat_value">
+                                            <field name="order_amount_total" widget="monetary"/>
+                                        </span>
                                     </div>
                                 </div>
-                                <div class="o_kanban_record_bottom mt-3">
-                                    <div class="oe_kanban_bottom_right">
-                                        <field name="initial_status" 
-                                               widget="label_selection" 
-                                               options="{'classes': {
-                                                   'confirmed': 'success',
-                                                   'despachado': 'warning',
-                                                   'in_transit': 'info'
-                                               }}"/>
-                                    </div>
-                                </div>
+                            </div>
+                            
+                            <!-- Pie de tarjeta -->
+                            <div class="o_kanban_card_footer">
+                                <button t-if="record.is_ready_for_dispatch.raw_value"
+                                        name="action_dispatch_selected" 
+                                        type="object" 
+                                        class="btn btn-primary btn-sm">
+                                    <i class="fa fa-truck"/> Despachar
+                                </button>
+                                <button name="action_print_carrier_labels" 
+                                        type="object" 
+                                        class="btn btn-secondary btn-sm">
+                                    <i class="fa fa-print"/> Etiqueta
+                                </button>
                             </div>
                         </div>
                     </t>
@@ -64,27 +117,48 @@
         </field>
     </record>
 
-
-    <!-- Vista de búsqueda -->
+    <!-- Vista de Búsqueda Optimizada -->
     <record id="view_courier_shipment_kanban_search" model="ir.ui.view">
         <field name="name">courier.shipment.kanban.search</field>
         <field name="model">courier.shipment</field>
         <field name="arch" type="xml">
             <search>
-                <field name="name"/>
-                <field name="partner_id"/>
+                <!-- Campos de búsqueda -->
+                <field name="name" filter_domain="['|', ('name', 'ilike', self), ('partner_id', 'ilike', self)]"/>
                 <field name="carrier_id"/>
                 <field name="district_id"/>
+                <field name="delivery_date"/>
+                
+                <!-- Filtros rápidos -->
+                <filter name="today" 
+                        string="Hoy" 
+                        domain="[('delivery_date', '>=', context_today().strftime('%Y-%m-%d')),
+                                ('delivery_date', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                
                 <separator/>
-                <filter string="Confirmados" 
-                        name="confirmed" 
+                <filter name="ready_dispatch" 
+                        string="Listos para Despacho" 
+                        domain="[('is_ready_for_dispatch', '=', True)]"/>
+                
+                <separator/>
+                <filter name="confirmed" 
+                        string="Confirmados" 
                         domain="[('initial_status', '=', 'confirmed')]"/>
-                <filter string="Despachados" 
-                        name="despachado" 
+                <filter name="despachado" 
+                        string="Despachados" 
                         domain="[('initial_status', '=', 'despachado')]"/>
-                <filter string="En Tránsito" 
-                        name="in_transit" 
+                <filter name="in_transit" 
+                        string="En Tránsito" 
                         domain="[('initial_status', '=', 'in_transit')]"/>
+                
+                <!-- Panel de búsqueda lateral -->
+                <searchpanel>
+                    <field name="carrier_id" icon="fa-truck" enable_counters="1" select="multi" expand="1"/>
+                    <field name="district_id" icon="fa-map-marker" enable_counters="1"/>
+                    <field name="initial_status" icon="fa-info-circle" enable_counters="1"/>
+                </searchpanel>
+                
+                <!-- Agrupaciones -->
                 <group expand="0" string="Agrupar Por">
                     <filter string="Courier" 
                             name="group_carrier" 
@@ -95,34 +169,45 @@
                     <filter string="Estado" 
                             name="group_status" 
                             context="{'group_by': 'initial_status'}"/>
+                    <filter string="Fecha" 
+                            name="group_date" 
+                            context="{'group_by': 'delivery_date:day'}"/>
                 </group>
             </search>
         </field>
     </record>
 
-    <!-- Acción -->
-    <record id="action_dispatch_board" model="ir.actions.act_window">
-        <field name="name">Panel de Despacho</field>
+    <!-- Acción Optimizada -->
+    <record id="action_courier_kanban" model="ir.actions.act_window">
+        <field name="name">Panel de Courier</field>
         <field name="res_model">courier.shipment</field>
         <field name="view_mode">kanban,list,form</field>
+        <field name="view_id" ref="view_courier_shipment_kanban"/>
         <field name="search_view_id" ref="view_courier_shipment_kanban_search"/>
-        <field name="domain">[]</field>
-        <field name="context">{"search_default_group_carrier": 1, "search_default_confirmed": 1}</field>
+        <field name="domain">[('initial_status', 'not in', ['cancelled'])]</field>
+        <field name="context">{
+            'search_default_today': 1,
+            'search_default_group_carrier': 1,
+            'search_default_ready_dispatch': 1
+        }</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                No hay envíos pendientes de despacho
+                ¡Sin envíos pendientes!
             </p>
             <p>
-                Aquí podrás ver todos los envíos agrupados por courier
+                Los envíos aparecerán aquí agrupados por courier.
+                <br/>
+                Podrás gestionarlos de manera visual y eficiente.
             </p>
         </field>
     </record>
 
-    <!-- Menú -->
+    <!-- Menú con grupos de seguridad -->
     <menuitem 
-        id="menu_dispatch_board"
-        name="Panel de Despacho"
-        action="action_dispatch_board"
+        id="menu_courier_kanban"
+        name="Panel de Courier"
+        action="action_courier_kanban"
         parent="menu_courier_operations"
-        sequence="5"/>
+        sequence="6"
+        groups="courier_management.group_courier_user,courier_management.group_courier_manager"/>
 </odoo>
