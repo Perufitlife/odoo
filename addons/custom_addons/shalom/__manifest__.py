@@ -17,7 +17,6 @@
     ],
     'data': [
         'security/ir.model.access.csv',
-        'views/res_config_settings_views.xml',  # Agregar esta línea
         'views/agency_address_views.xml',
         'views/choose_agency_wizard_views.xml',
         'views/choose_address_wizard_views.xml',
