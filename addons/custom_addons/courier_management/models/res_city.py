@@ -24,12 +24,15 @@ class ResCity(models.Model):
         domain = []
 
         if name:
-            json_search = json.dumps({"en_US": name})
-            domain = [
-                '|',
-                ('name', operator, name),
-                ('name', 'ilike', json_search)
-            ]
+            try:
+                json_search = json.dumps({"en_US": name})
+                domain = [
+                    '|',
+                    ('name', operator, name),
+                    ('name', 'ilike', json_search)
+                ]
+            except:
+                domain = [('name', operator, name)]
 
         state_id = self._context.get('state_id')
         if state_id:
