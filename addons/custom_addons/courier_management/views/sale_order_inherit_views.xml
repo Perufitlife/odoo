@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_order_form_inherit_delivery_address" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.delivery.address</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Campo partner_shipping_id después de carrier_id -->
+            <field name="carrier_id" position="after">
+                <field name="partner_shipping_id"
+                       context="{'default_type': 'delivery'}"
+                       options="{'no_open': False, 'no_create_edit': False}"
+                       domain="[('parent_id','=', partner_id), ('type','=','delivery')]"/>
+            </field>
+
+            <!-- Mover commitment_date de forma más directa -->
+            <xpath expr="//group[@name='sale_shipping']" position="replace">
+                <group name="sale_shipping" string="Shipping">
+                    <field name="commitment_date" string="Delivery Date"/>
+                </group>
+            </xpath>
+
+            <!-- Agregar el nuevo campo commitment_date después del partner_id -->
+            <field name="partner_id" position="after">
+                <field name="commitment_date" string="Delivery Date"/>
+            </field>
+        </field>
+    </record>
+</odoo>

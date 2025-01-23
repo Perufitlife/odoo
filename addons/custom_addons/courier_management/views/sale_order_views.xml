@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ============================
+         FORM VIEW INHERIT
+         ============================ -->
+    <record id="view_order_form_inherit_courier" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.courier</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Botón de envíos -->
+            <div name="button_box" position="inside">
+                <button name="action_view_shipments" 
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-truck"
+                        invisible_modifier="shipment_count == 0">
+                    <field name="shipment_count" widget="statinfo" string="Envíos"/>
+                </button>
+            </div>
+
+            <!-- Mover commitment_date -->
+            <xpath expr="//group[@name='sale_shipping']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <field name="partner_id" position="after">
+                <field name="commitment_date" widget="date" string="Fecha de Entrega"/>
+            </field>
+
+            <xpath expr="//field[@name='commitment_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
+            <!-- Carrier después de payment_term_id -->
+            <field name="payment_term_id" position="after">
+                <field name="carrier_id" options="{'no_create': True}"/>
+            </field>
+
+            <!-- Pestaña de envíos -->
+            <notebook position="inside">
+                <page string="Envíos" 
+                      name="shipments" 
+                      invisible_modifier="shipment_count == 0">
+                    <field name="shipment_ids" readonly="1">
+                        <tree> <!-- Cambio de <list> a <tree> -->
+                            <field name="name"/>
+                            <field name="carrier_id"/>
+                            <field name="shipping_date"/>
+                            <field name="delivery_date" required="1"/>
+                            <field name="delivery_fee" widget="monetary"/>
+                            <field name="state" widget="badge"/>
+                            <field name="currency_id" invisible="1"/>
+                        </tree>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

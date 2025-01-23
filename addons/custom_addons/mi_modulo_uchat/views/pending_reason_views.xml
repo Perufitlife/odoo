@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_pending_reason_wizard_form" model="ir.ui.view">
+        <field name="name">pending.reason.wizard.form</field>
+        <field name="model">pending.reason.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Seleccionar Razón">
+                <div class="text-center mb-4">
+                    <h3>Seleccione la razón por la que el pedido queda pendiente</h3>
+                </div>
+                <div class="d-flex flex-column align-items-stretch gap-2">
+                    <button string="Solicitar Dirección Completa" name="action_solicitar_direccion" type="object" class="btn-primary"/>
+                    <button string="Solicitar Fecha de Entrega" name="action_solicitar_fecha" type="object" class="btn-primary"/>
+                    <button string="Solicitar Referencia" name="action_solicitar_referencia" type="object" class="btn-primary"/>
+                    <button string="Solicitar Confirmación" name="action_solicitar_confirmacion" type="object" class="btn-primary"/>
+                    <button string="Enviar Información del Producto" name="action_enviar_info_producto" type="object" class="btn-primary"/>
+                    <button string="Enviar Precios" name="action_enviar_precios" type="object" class="btn-primary"/>
+                </div>
+                <footer>
+                    <button string="Cerrar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

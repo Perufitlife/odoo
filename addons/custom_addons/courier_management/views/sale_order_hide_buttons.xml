@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+   <record id="view_sale_order_form_hide_buttons" model="ir.ui.view">
+       <field name="name">sale.order.form.hide.buttons</field>
+       <field name="model">sale.order</field>
+       <field name="inherit_id" ref="sale.view_order_form"/>
+       <field name="arch" type="xml">
+           <!-- Main Action Buttons -->
+           <button name="action_quotation_send" position="replace"/>
+           <button name="action_confirm" position="replace"/>
+           <button name="action_cancel" position="replace"/>
+           
+           <!-- Invoice Related -->
+           <button name="%(sale.action_view_sale_advance_payment_inv)d" position="replace"/>
+       </field>
+   </record>
+</odoo>

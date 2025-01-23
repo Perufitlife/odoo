@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="report_shipment_labels">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="shipment">
+                <div class="page" style="padding: 20px;">
+                    <div style="border: 2px solid black; padding: 15px; margin-bottom: 20px;">
+                        <!-- Encabezado con información principal -->
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <h2>ETIQUETA DE ENVÍO</h2>
+                            <h3><t t-esc="shipment.name"/></h3>
+                        </div>
+
+                        <!-- Información del destinatario -->
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="border-bottom: 1px solid #999;">DATOS DEL DESTINATARIO</h4>
+                            <strong>Cliente: </strong><span t-field="shipment.partner_id.name"/><br/>
+                            <strong>Dirección: </strong>
+                            <div style="margin-left: 20px;">
+                                <span t-field="shipment.customer_street"/><br/>
+                                <span t-field="shipment.customer_city"/><br/>
+                                <span t-field="shipment.customer_state"/>
+                            </div>
+                        </div>
+
+                        <!-- Detalle de productos -->
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="border-bottom: 1px solid #999;">DETALLE DE PRODUCTOS</h4>
+                            <table class="table table-sm" style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-right">Cantidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="shipment.deliverable_lines" t-as="line">
+                                        <tr>
+                                            <td><span t-field="line.product_id.name"/></td>
+                                            <td class="text-right"><span t-field="line.product_uom_qty"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Información de pago -->
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="border-bottom: 1px solid #999;">INFORMACIÓN DE PAGO</h4>
+                            <strong>Monto a cobrar: </strong>
+                            <span t-field="shipment.delivery_fee" t-options='{"widget": "monetary", "display_currency": shipment.currency_id}'/>
+                        </div>
+
+                        <!-- Observaciones -->
+                        <div style="margin-bottom: 15px;">
+                            <h4 style="border-bottom: 1px solid #999;">OBSERVACIONES</h4>
+                            <p t-field="shipment.notes"/>
+                        </div>
+
+                        <!-- Fecha de envío -->
+                        <div style="text-align: right; margin-top: 20px;">
+                            <strong>Fecha de entrega: </strong><span t-field="shipment.delivery_date"/>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

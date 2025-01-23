@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+   <!-- Vista tipo TREE -->
+   <record id="view_agency_address_list" model="ir.ui.view">
+       <field name="name">agency.address.list</field>
+       <field name="model">agency.address</field>
+       <field name="arch" type="xml">
+           <tree>
+               <field name="name"/>
+               <field name="agency_type"/>
+               <field name="state_id"/>
+               <field name="city_id"/>
+               <field name="district_id"/>
+               <field name="address"/>
+           </tree>
+       </field>
+   </record>
+
+   <!-- Vista tipo FORM -->
+   <record id="view_agency_address_form" model="ir.ui.view">
+       <field name="name">agency.address.form</field>
+       <field name="model">agency.address</field>
+       <field name="arch" type="xml">
+           <form>
+               <sheet>
+                   <group>
+                       <group>
+                           <field name="name" placeholder="Nombre de la agencia"/>
+                           <field name="agency_type"/>
+                           <field name="address"/>
+                       </group>
+                       <group>
+                           <field name="state_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                           <field name="city_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                           <field name="district_id" options="{'no_create': True, 'no_create_edit': True}"/>
+                       </group>
+                   </group>
+               </sheet>
+           </form>
+       </field>
+   </record>
+
+   <!-- Vista de Búsqueda -->
+   <record id="view_agency_address_search" model="ir.ui.view">
+       <field name="name">agency.address.search</field>
+       <field name="model">agency.address</field>
+       <field name="arch" type="xml">
+           <search>
+               <field name="name"/>
+               <field name="state_id"/>
+               <field name="city_id"/>
+               <field name="district_id"/>
+               <filter string="Shalom" name="shalom" domain="[('agency_type', '=', 'shalom')]"/>
+               <filter string="Olva" name="olva" domain="[('agency_type', '=', 'olva')]"/>
+               <group expand="0" string="Agrupar Por">
+                   <filter name="group_by_agency" string="Tipo de Agencia" context="{'group_by': 'agency_type'}"/>
+                   <filter name="group_by_state" string="Departamento" context="{'group_by': 'state_id'}"/>
+                   <filter name="group_by_city" string="Provincia" context="{'group_by': 'city_id'}"/>
+               </group>
+           </search>
+       </field>
+   </record>
+
+   <!-- Acciones -->
+   <record id="action_agency_addresses" model="ir.actions.act_window">
+       <field name="name">Direcciones de Agencias</field>
+       <field name="res_model">agency.address</field>
+       <field name="view_mode">tree,form</field>
+   </record>
+
+   <record id="action_shalom_addresses" model="ir.actions.act_window">
+       <field name="name">Direcciones Shalom</field>
+       <field name="res_model">agency.address</field>
+       <field name="view_mode">tree,form</field>
+       <field name="domain">[('agency_type', '=', 'shalom')]</field>
+       <field name="context">{'default_agency_type': 'shalom'}</field>
+   </record>
+
+   <record id="action_olva_addresses" model="ir.actions.act_window">
+       <field name="name">Direcciones Olva</field>
+       <field name="res_model">agency.address</field>
+       <field name="view_mode">tree,form</field>
+       <field name="domain">[('agency_type', '=', 'olva')]</field>
+       <field name="context">{'default_agency_type': 'olva'}</field>
+   </record>
+
+   <!-- Estructura de Menú -->
+   <menuitem id="menu_delivery_agencies_root"
+             name="Agencias de Envío"
+             sequence="100"/>
+
+   <menuitem id="menu_all_agencies"
+             name="Todas las Agencias"
+             parent="menu_delivery_agencies_root"
+             action="action_agency_addresses"
+             sequence="10"/>
+
+   <menuitem id="menu_shalom_addresses"
+             name="Direcciones Shalom"
+             parent="menu_delivery_agencies_root"
+             action="action_shalom_addresses"
+             sequence="20"/>
+
+   <menuitem id="menu_olva_addresses"
+             name="Direcciones Olva"
+             parent="menu_delivery_agencies_root"
+             action="action_olva_addresses"
+             sequence="30"/>
+</odoo>

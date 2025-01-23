@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Vista Kanban principal -->
+    <record id="view_courier_shipment_kanban" model="ir.ui.view">
+        <field name="name">courier.shipment.kanban</field>
+        <field name="model">courier.shipment</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="carrier_id" 
+                    class="o_kanban_small_column" 
+                    records_draggable="0">
+                <field name="carrier_id"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="pending_orders_count"/>
+                <field name="total_products"/>
+                <field name="total_to_collect"/>
+                <field name="currency_id"/>
+                <field name="district_id"/>
+                <field name="initial_status"/>
+                
+                <!-- Agrupación y contadores -->
+                <progressbar field="initial_status"
+                    colors='{
+                        "confirmed": "success",
+                        "despachado": "warning",
+                        "in_transit": "info"
+                    }'
+                />
+                
+                <!-- Plantilla para las tarjetas -->
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click o_kanban_record">
+                            <div class="o_kanban_content">
+                                <div class="o_kanban_record_title">
+                                    <field name="name" class="fw-bold"/>
+                                </div>
+                                <div class="o_kanban_record_subtitle mt-2">
+                                    <div class="text-muted">Distrito: <field name="district_id"/></div>
+                                </div>
+                                <div class="oe_kanban_details mt-2">
+                                    <div>Cliente: <field name="partner_id"/></div>
+                                    <div class="text-muted mt-2">
+                                        <span class="me-3">Productos: <field name="total_products"/></span>
+                                        <span>Total: <field name="total_to_collect" widget="monetary"/></span>
+                                    </div>
+                                </div>
+                                <div class="o_kanban_record_bottom mt-3">
+                                    <div class="oe_kanban_bottom_right">
+                                        <field name="initial_status" 
+                                               widget="label_selection" 
+                                               options="{'classes': {
+                                                   'confirmed': 'success',
+                                                   'despachado': 'warning',
+                                                   'in_transit': 'info'
+                                               }}"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+
+    <!-- Vista de búsqueda -->
+    <record id="view_courier_shipment_kanban_search" model="ir.ui.view">
+        <field name="name">courier.shipment.kanban.search</field>
+        <field name="model">courier.shipment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="carrier_id"/>
+                <field name="district_id"/>
+                <separator/>
+                <filter string="Confirmados" 
+                        name="confirmed" 
+                        domain="[('initial_status', '=', 'confirmed')]"/>
+                <filter string="Despachados" 
+                        name="despachado" 
+                        domain="[('initial_status', '=', 'despachado')]"/>
+                <filter string="En Tránsito" 
+                        name="in_transit" 
+                        domain="[('initial_status', '=', 'in_transit')]"/>
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Courier" 
+                            name="group_carrier" 
+                            context="{'group_by': 'carrier_id'}"/>
+                    <filter string="Distrito" 
+                            name="group_district" 
+                            context="{'group_by': 'district_id'}"/>
+                    <filter string="Estado" 
+                            name="group_status" 
+                            context="{'group_by': 'initial_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción -->
+    <record id="action_dispatch_board" model="ir.actions.act_window">
+        <field name="name">Panel de Despacho</field>
+        <field name="res_model">courier.shipment</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_courier_shipment_kanban_search"/>
+        <field name="domain">[]</field>
+        <field name="context">{
+            'search_default_group_carrier': 1,
+            'search_default_confirmed': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay envíos pendientes de despacho
+            </p>
+            <p>
+                Aquí podrás ver todos los envíos agrupados por courier
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú -->
+    <menuitem 
+        id="menu_dispatch_board"
+        name="Panel de Despacho"
+        action="action_dispatch_board"
+        parent="menu_courier_operations"
+        sequence="5"/>
+</odoo>

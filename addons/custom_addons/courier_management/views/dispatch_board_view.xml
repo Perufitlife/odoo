@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Vista de búsqueda -->
+    <record id="view_dispatch_board_search" model="ir.ui.view">
+        <field name="name">courier.shipment.search</field>
+        <field name="model">courier.shipment</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="carrier_id"/>
+                <field name="district_id"/>
+                <field name="delivery_date"/>
+
+                <filter string="Entregas de Hoy" 
+                        name="delivery_today"
+                        domain="[('delivery_date', '>=', context_today().strftime('%Y-%m-%d')),
+                                ('delivery_date', '&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+
+                <separator/>
+                <filter string="Confirmados"
+                        name="initial_confirmed" 
+                        domain="[('initial_status', '=', 'confirmed')]"/>
+                <filter string="Reprogramados" 
+                        name="initial_reprogrammed"
+                        domain="[('initial_status', '=', 'reprogramado')]"/>
+
+                <filter string="Por Despachar" 
+                        name="to_dispatch" 
+                        domain="['|', 
+                                ('initial_status', '=', 'confirmed'),
+                                ('initial_status', '=', 'reprogramado')]"/>
+
+                <group expand="1" string="Agrupar Por">
+                    <filter string="Fecha de Entrega" 
+                            name="groupby_date" 
+                            context="{'group_by': 'delivery_date:day'}"/>
+                    <filter string="Courier" 
+                            name="groupby_carrier" 
+                            context="{'group_by': 'carrier_id'}"/>
+                    <filter string="Distrito" 
+                            name="groupby_district" 
+                            context="{'group_by': 'district_id'}"/>
+                    <filter string="Estado" 
+                            name="groupby_status" 
+                            context="{'group_by': 'initial_status'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista de lista -->
+    <record id="view_dispatch_board_list" model="ir.ui.view">
+        <field name="name">courier.shipment.list</field>
+        <field name="model">courier.shipment</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="selected" widget="boolean_checkbox"/>
+                <field name="name"/>
+                <field name="sale_order_id"/>
+                <field name="partner_id"/>
+                <field name="delivery_date" widget="date"/>
+                <field name="carrier_id"/>
+                <field name="district_id"/>
+                <field name="delivery_fee" widget="monetary" sum="Total"/>
+                <field name="order_amount_total" sum="Total a Cobrar"/>
+                <field name="initial_status" widget="badge"
+                       decoration-info="initial_status == 'confirmed'"
+                       decoration-warning="initial_status == 'reprogramado'"
+                       decoration-success="initial_status == 'delivered'"/>
+                <field name="currency_id" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Acción del panel de despacho -->
+    <record id="action_dispatch_board" model="ir.actions.act_window">
+        <field name="name">Panel de Despacho</field>
+        <field name="res_model">courier.shipment</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">['|', 
+                            ('initial_status', '=', 'confirmed'),
+                            ('initial_status', '=', 'reprogramado')]</field>
+        <field name="context">{
+            'search_default_delivery_today': 1,
+            'search_default_groupby_date': 1
+        }</field>
+        <field name="search_view_id" ref="view_dispatch_board_search"/>
+    </record>
+
+    <!-- Acciones de servidor -->
+    <record id="action_dispatch_multiple" model="ir.actions.server">
+        <field name="name">Marcar como Despachado</field>
+        <field name="model_id" ref="model_courier_shipment"/>
+        <field name="binding_model_id" ref="model_courier_shipment"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">records.action_dispatch_selected()</field>
+    </record>
+
+    <record id="action_print_multiple_labels" model="ir.actions.server">
+        <field name="name">Imprimir Etiquetas</field>
+        <field name="model_id" ref="model_courier_shipment"/>
+        <field name="binding_model_id" ref="model_courier_shipment"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_print_carrier_labels()</field>
+    </record>
+
+    <record id="action_open_verification_wizard" model="ir.actions.server">
+        <field name="name">Verificar Stock</field>
+        <field name="model_id" ref="model_courier_shipment"/>
+        <field name="binding_model_id" ref="model_courier_shipment"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records._action_open_verification_wizard()</field>
+    </record>
+
+    <!-- Menú -->
+    <menuitem 
+        id="menu_dispatch_board"
+        name="Panel de Despacho"
+        action="action_dispatch_board"
+        parent="menu_courier_operations"
+        sequence="5"/>
+</odoo>
+

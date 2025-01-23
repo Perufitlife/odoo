@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_shopify_store_user,shopify.store.user,model_shopify_store,base.group_user,1,1,1,1
+access_shopify_order_user,shopify.order.user,model_shopify_order,base.group_user,1,1,1,1
+access_shopify_webhook_log_user,shopify.webhook.log.user,model_shopify_webhook_log,base.group_user,1,1,1,1
+access_shopify_validation_rule_user,shopify.validation.rule.user,model_shopify_validation_rule,base.group_user,1,1,1,1
+access_sale_order_shopify,sale.order.shopify,sale.model_sale_order,sales_team.group_sale_salesman,1,1,1,1

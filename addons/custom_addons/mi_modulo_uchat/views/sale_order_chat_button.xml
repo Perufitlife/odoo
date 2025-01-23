@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_sale_order_chat_button_inherit" model="ir.ui.view">
+        <field name="name">sale.order.form.uchat.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_open_uchat"
+                        type="object"
+                        string="Abrir Chat UChat"
+                        class="oe_highlight"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

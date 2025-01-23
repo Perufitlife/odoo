@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menú principal de Shopify -->
+    <menuitem 
+        id="menu_shopify_root" 
+        name="Shopify Integration" 
+        sequence="10"/>
+
+    <!-- Submenú para Tiendas -->
+    <menuitem 
+        id="menu_shopify_store" 
+        name="Stores"
+        parent="menu_shopify_root"
+        action="action_shopify_store"
+        sequence="10"/>
+
+    <!-- Submenú para Webhooks -->
+    <menuitem 
+        id="menu_shopify_webhook" 
+        name="Webhook Logs"
+        parent="menu_shopify_root"
+        action="shopify_webhook_log_action"
+        sequence="20"/>
+</odoo>

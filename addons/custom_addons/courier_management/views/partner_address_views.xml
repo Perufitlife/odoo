@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_address" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.address</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!-- Keep city field but make it invisible -->
+            <field name="city" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </field>
+
+            <field name="country_id" position="after">
+                <field name="state_id"
+                       options="{'no_create': True}"
+                       placeholder="Estado/Provincia"
+                       class="o_address_state"
+                       attrs="{'invisible': [('country_id', '=', False)],
+                              'required': [('country_id', '!=', False)]}"
+                       domain="[('country_id', '=', country_id)]"/>
+
+                <field name="city_id"
+                       options="{'no_create': True}"
+                       placeholder="Ciudad"
+                       class="o_address_city"
+                       attrs="{'invisible': [('state_id', '=', False)],
+                              'required': [('state_id', '!=', False)]}"
+                       context="{'state_id': state_id}"
+                       domain="[('state_id', '=', state_id)]"/>
+
+                <field name="l10n_pe_district"
+                       options="{'no_create': True}"
+                       placeholder="Distrito"
+                       class="o_address_district"
+                       attrs="{'invisible': [('city_id', '=', False)],
+                              'required': [('city_id', '!=', False)]}"
+                       domain="[('city_id', '=', city_id)]"
+                       context="{'city_id': city_id}"/>
+            </field>
+        </field>
+    </record>
+</odoo>

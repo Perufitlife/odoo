@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_sale_order_status_buttons_inherit" model="ir.ui.view">
+        <field name="name">sale.order.status.buttons.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_confirm'][1]" position="after">
+                <button name="action_set_pendiente"
+                        type="object"
+                        string="Pendiente"
+                        class="oe_highlight"/>
+                
+                <button name="action_set_esperando_adelanto"
+                        type="object"
+                        string="Esperando Adelanto"
+                        class="oe_highlight"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

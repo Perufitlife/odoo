@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_dni_check_wizard_form" model="ir.ui.view">
+        <field name="name">dni.check.wizard.form</field>
+        <field name="model">dni.check.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Consulta DNI">
+                <group>
+                    <field name="dni"/>
+                    <field name="nombres"/>
+                    <field name="apellido_paterno"/>
+                    <field name="apellido_materno"/>
+                    <field name="mensaje" invisible="not mensaje"/>
+                    <field name="sale_id" invisible="1"/>
+                </group>
+                <footer>
+                    <button string="Cerrar" 
+                            class="btn-secondary" 
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

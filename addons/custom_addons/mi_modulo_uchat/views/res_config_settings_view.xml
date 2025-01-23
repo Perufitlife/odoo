@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_uchat" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.uchat</field>
+        <field name="model">res.config.settings</field>
+        <!-- Heredamos la vista que aparece en tus capturas -->
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- 
+               Insertamos nuestro bloque dentro del div class="settings" 
+               para no romper la estructura 
+            -->
+            <xpath expr="//div[@class='o_setting_container']/div[@class='settings']"
+                   position="inside">
+
+                <!-- Ajusta las clases / estilos como prefieras -->
+                <div class="app_settings_block">
+                    <h2>UChat Settings</h2>
+                    
+                    <!-- Tus campos de res.config.settings -->
+                    <field name="uchat_api_token"/>
+                    <field name="uchat_environment"/>
+                    <field name="uchat_auto_sync"/>
+                    <field name="uchat_default_language"/>
+
+                    <!-- Ejemplo de botón -->
+                    <button name="action_test_connection"
+                            type="object"
+                            string="Probar Conexión UChat"
+                            class="btn-primary"/>
+                </div>
+
+            </xpath>
+        </field>
+    </record>
+</odoo>

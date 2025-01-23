@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- VISTA FORM Webhook Log -->
+    <record id="shopify_webhook_log_view_form" model="ir.ui.view">
+        <field name="name">shopify.webhook.log.view.form</field>
+        <field name="model">shopify.webhook.log</field>
+        <field name="arch" type="xml">
+            <form string="Shopify Webhook" class="o_sale_order">
+                <!-- Cabecera -->
+                <header>
+                    <!-- Botón para procesar el webhook (puedes cambiar 'oe_highlight' por 'btn-primary') -->
+                    <button name="action_process_webhook"
+                            string="Procesar Webhook"
+                            type="object"
+                            class="oe_highlight"/>
+                    
+                    <!-- Statusbar con los estados -->
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="pending,processed,failed"/>
+                </header>
+
+                <!-- Contenido principal -->
+                <sheet>
+                    <!-- Cajas de stats/estadísticas (opcional). 
+                         Si no tienes stats, puedes quitarlo. -->
+                    <div class="oe_button_box" name="button_box">
+                        <!-- Ejemplo: mostrar el conteo de algo
+                             <button name="action_show_something"
+                                     type="object"
+                                     class="oe_stat_button"
+                                     icon="fa-something">
+                            <field name="some_count" widget="statinfo"/>
+                        </button> -->
+                    </div>
+
+                    <!-- Título -->
+                    <div class="oe_title">
+                        <h1>
+                            <!-- Nombre del webhook -->
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <!-- Agrupemos campos principales -->
+                    <group>
+                        <field name="event_type"/>
+                        <field name="received_at"/>
+                    </group>
+
+                    <!-- Cuaderno de pestañas (notebook) -->
+                    <notebook>
+                        <page string="Payload">
+                            <field name="payload" widget="code_editor"
+                                   options="{'language': 'json'}"
+                                   style="min-height:400px; width:100%; max-width:none; overflow:auto;"/>
+                        </page>
+                        
+                        <page string="Error">
+                            <field name="error_message"/>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <!-- Chatter -->
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACCIÓN de ventana (para abrir la lista y formulario) -->
+    <record id="shopify_webhook_log_action" model="ir.actions.act_window">
+        <field name="name">shopify.webhook.log.action</field>
+        <field name="res_model">shopify.webhook.log</field>
+        <!-- Modo principal: list,form -->
+        <field name="view_mode">list,form</field>
+        <!-- Buscador (search) -->
+        <!-- Contexto para filtrar logs pendientes, si quieres -->
+        <field name="context">{'search_default_pending': 1}</field>
+        <!-- Mensaje en caso de no tener registros -->
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay registros de webhooks aún.
+            </p>
+            <p>
+                Los webhooks recibidos de Shopify aparecerán aquí.
+            </p>
+        </field>
+    </record>
+</odoo>

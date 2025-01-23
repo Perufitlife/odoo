@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+        <function model="res.city" name="_fix_city_names"/>
+    </data>
+</odoo>

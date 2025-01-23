@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista TREE para el modelo hijo 'shipment.verification.line' -->
+    <record id="view_shipment_verification_line_list" model="ir.ui.view">
+        <field name="name">shipment.verification.line.list</field>
+        <field name="model">shipment.verification.line</field>
+        <field name="arch" type="xml">
+            <tree editable="bottom" create="0" delete="0"> <!-- Cambio de <list> a <tree> -->
+                <field name="product_id" readonly="1"/>
+                <field name="quantity_required" readonly="1"/>
+                <field name="quantity_available"/>
+                <field name="quantity_to_ship"/>
+            </tree>
+        </field>
+    </record>
+</odoo>

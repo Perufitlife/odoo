@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Motivos predeterminados -->
+        <record id="delivery_reason_1" model="no.delivery.reason">
+            <field name="name">Cliente Ausente</field>
+            <field name="description">No se encontró al cliente en la dirección indicada</field>
+        </record>
+        
+        <record id="delivery_reason_2" model="no.delivery.reason">
+            <field name="name">Dirección Incorrecta</field>
+            <field name="description">La dirección proporcionada no es correcta o no existe</field>
+        </record>
+        
+        <record id="delivery_reason_3" model="no.delivery.reason">
+            <field name="name">Cliente Rechaza Envío</field>
+            <field name="description">El cliente rechazó recibir el envío</field>
+        </record>
+        
+        <record id="delivery_reason_4" model="no.delivery.reason">
+            <field name="name">Zona Peligrosa</field>
+            <field name="description">La zona es considerada de alto riesgo</field>
+        </record>
+        
+        <record id="delivery_reason_5" model="no.delivery.reason">
+            <field name="name">Fuera de Horario</field>
+            <field name="description">Se intentó entregar fuera del horario establecido</field>
+        </record>
+    </data>
+</odoo>

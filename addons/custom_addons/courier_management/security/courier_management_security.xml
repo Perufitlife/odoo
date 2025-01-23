@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- 
+            Categoría que agrupa tus grupos específicos de Courier 
+            en la interfaz de Ajustes > Usuarios & Empresas > Grupos.
+        -->
+        <record id="module_category_courier" model="ir.module.category">
+            <field name="name">Courier Management</field>
+            <field name="description">Gestión de Envíos y Couriers</field>
+            <field name="sequence">1</field>
+        </record>
+
+        <!-- 
+            Grupo de usuarios Courier.
+            Tendrán acceso restringido para ver y actualizar (según permisos) 
+            únicamente sus envíos asignados.
+        -->
+        <record id="group_courier_user" model="res.groups">
+            <field name="name">Courier User</field>
+            <field name="category_id" ref="module_category_courier"/>
+            <field name="comment">
+                Los usuarios con este grupo pueden ver y actualizar sus envíos asignados.
+            </field>
+        </record>
+
+        <!-- 
+            Grupo de managers Courier.
+            Tiene implícito el grupo "Courier User".
+            Se agrega al administrador como miembro por defecto.
+        -->
+        <record id="group_courier_manager" model="res.groups">
+            <field name="name">Courier Manager</field>
+            <field name="category_id" ref="module_category_courier"/>
+            <!-- Al asignar implied_ids, este grupo incluye automáticamente group_courier_user -->
+            <field name="implied_ids" eval="[(4, ref('group_courier_user'))]"/>
+            <!-- El usuario Administrador queda asignado por defecto -->
+            <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+            <field name="comment">
+                Los managers pueden gestionar todas las configuraciones del módulo courier.
+            </field>
+        </record>
+
+        <!-- 
+            Regla de registro para usuarios Courier:
+            Solo ver/envíos donde el carrier_id.courier_user_id coincida con user.id
+            Es decir, sus envíos propios.
+        -->
+        <record id="rule_courier_shipment_carrier" model="ir.rule">
+            <field name="name">Courier User: ver solo sus envíos</field>
+            <field name="model_id" ref="model_courier_shipment"/>
+            <field name="groups" eval="[(4, ref('courier_management.group_courier_user'))]"/>
+            <field name="domain_force">[('carrier_id.courier_user_id', '=', user.id)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- 
+            Regla de registro para managers:
+            Pueden acceder a todos los envíos sin restricción.
+        -->
+        <record id="rule_courier_shipment_manager" model="ir.rule">
+            <field name="name">Courier Manager: acceso completo a envíos</field>
+            <field name="model_id" ref="model_courier_shipment"/>
+            <field name="groups" eval="[(4, ref('courier_management.group_courier_manager'))]"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- 
+            Regla de registro para que los usuarios Courier puedan ver (read-only)
+            las órdenes de venta relacionadas a sus envíos.
+        -->
+        <record id="rule_sale_order_courier_user" model="ir.rule">
+            <field name="name">Courier User: ver órdenes relacionadas</field>
+            <field name="model_id" ref="sale.model_sale_order"/>
+            <field name="groups" eval="[(4, ref('courier_management.group_courier_user'))]"/>
+            <field name="domain_force">
+                [
+                    ('id', 'in', user.env['courier.shipment']
+                        .search([('carrier_id.courier_user_id', '=', user.id)])
+                        .mapped('sale_order_id').ids
+                    )
+                ]
+            </field>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+    </data>
+</odoo>

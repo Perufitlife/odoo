@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_labels_report" model="ir.actions.report">
+        <field name="name">Etiquetas de Envío</field>
+        <field name="model">courier.shipment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">courier_management.report_shipment_labels</field>
+        <field name="report_file">courier_management.report_shipment_labels</field>
+        <field name="binding_model_id" ref="model_courier_shipment"/>
+        <field name="print_report_name">'Shipment_Labels_' + object.name</field>
+    </record>
+</odoo>

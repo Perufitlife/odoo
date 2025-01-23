@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_courier" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.courier</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <!--
+                Insertamos un grupo "Courier" en la pestaña Ventas/Compras,
+                mostrando país, estado, ciudad y distrito PE (l10n_pe_district).
+            -->
+            <page name="sales_purchases" position="inside">
+                <group name="container_row_2" position="inside">
+                    <group name="courier" string="Courier" invisible_modifier="customer_rank == 0">
+                        <field name="country_id" options="{'no_create': True}"/>
+
+                        <!-- Reemplazar attrs por modifiers -->
+                        <field name="state_id"
+                               options="{'no_create': True}"
+                               modifiers='{"invisible": [["country_id","=",false]]}'/>
+
+                        <field name="city_id"
+                               options="{'no_create': True}"
+                               modifiers='{"invisible": [["state_id","=",false]]}'/>
+
+                        <!-- Campo unificado de distrito (localización PE) -->
+                        <field name="l10n_pe_district"
+                               options="{'no_create': True}"
+                               modifiers='{"invisible": [["city_id","=",false]]}'/>
+
+                        <field name="preferred_carrier_id" options="{'no_create': True}"/>
+                        <field name="total_shipment_amount" widget="monetary"/>
+                        <field name="last_shipment_date"/>
+                    </group>
+                </group>
+            </page>
+        </field>
+    </record>
+
+    <record id="view_res_partner_filter_inherit_courier" model="ir.ui.view">
+        <field name="name">res.partner.select.inherit.courier</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+
+            <!--
+                Añadimos los campos de filtro (preferred_carrier_id y l10n_pe_district)
+                después de category_id
+            -->
+            <field name="category_id" position="after">
+                <field name="preferred_carrier_id"/>
+                <field name="l10n_pe_district"/>
+            </field>
+
+            <!-- Filtro para "Con Courier Preferido" -->
+            <filter name="type_company" position="after">
+                <separator/>
+                <filter string="Con Courier Preferido"
+                        name="has_preferred_carrier"
+                        domain="[('preferred_carrier_id', '!=', False)]"/>
+            </filter>
+
+            <!-- Agrupar por Courier Preferido y por Distrito (l10n_pe_district) -->
+            <filter name="group_country" position="after">
+                <filter string="Courier Preferido"
+                        name="group_carrier"
+                        context="{'group_by': 'preferred_carrier_id'}"/>
+                <filter string="Distrito"
+                        name="group_district"
+                        context="{'group_by': 'l10n_pe_district'}"/>
+            </filter>
+        </field>
+    </record>
+</odoo>
