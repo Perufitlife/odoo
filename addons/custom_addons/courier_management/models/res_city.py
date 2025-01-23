@@ -8,7 +8,6 @@ class ResCity(models.Model):
         result = []
         for city in self:
             try:
-                # Si city.name es un JSON tipo {"en_US": "..."} lo parseamos
                 if city.name and isinstance(city.name, str) and city.name.startswith('{'):
                     name_dict = json.loads(city.name)
                     name = name_dict.get('en_US', '')
@@ -18,51 +17,6 @@ class ResCity(models.Model):
                 name = city.name
             result.append((city.id, name))
         return result
-
-    @api.model
-    def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
-        """
-        name: texto que el usuario escribe para filtrar (ej: city name)
-        args: posible dominio adicional
-        operator: tipo de comparación (ilike, =, etc.)
-        limit: # de resultados
-        name_get_uid: para controlar permisos si se usa
-        """
-        args = args or []  # Asegurarnos de no tener None
-        domain = []
-
-        # 1) Si el usuario escribió algo en 'name', construimos un filtro:
-        if name:
-            domain = [
-                '|',
-                ('name', operator, name),
-                ('name', 'ilike', f'{{"en_US": "{name}"}}')
-            ]
-
-        # 2) Chequeamos si hay un 'state_id' en el contexto
-        state_id = self._context.get('state_id')
-        if state_id:
-            # Si el domain ya tenía contenido, unimos con '&'
-            # (por ejemplo, state_id + búsquedas por nombre).
-            if domain:
-                # Equivalente a: AND([('state_id', '=', state_id)], domain)
-                domain = ['&', ('state_id', '=', state_id)] + domain
-            else:
-                # Si domain estaba vacío, simplemente lo definimos
-                domain = [('state_id', '=', state_id)]
-
-        # 3) Unimos (si existen) 'domain' y 'args'
-        #    Sólo metemos '&' si ambos tienen contenido.
-        if domain and args:
-            domain = ['&'] + domain + args
-        elif args:  
-            # si domain está vacío, nos quedamos con args
-            domain = args
-        # si domain no está vacío pero args sí, no tocamos domain
-
-        print("Domain:", domain)  # Log para debugging
-
-        return self._search(domain, limit=limit, access_rights_uid=name_get_uid)
 
     @api.model
     def _name_search(self, name='', args=None, operator='ilike', limit=100, name_get_uid=None):
@@ -78,14 +32,19 @@ class ResCity(models.Model):
 
         state_id = self._context.get('state_id')
         if state_id:
-            state_domain = [('state_id', '=', state_id)]
             if domain:
-                domain = ['&'] + state_domain + domain
+                domain = ['&', ('state_id', '=', state_id)] + domain
             else:
-                domain = state_domain
+                domain = [('state_id', '=', state_id)]
 
-        if domain and args:
-            domain = domain + args
+        final_domain = domain + args if args else domain
 
-        return self._search(domain, limit=limit, access_rights_uid=name_get_uid)
+        return self._search(final_domain, limit=limit, access_rights_uid=name_get_uid)
 
+    @api.model
+    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
+        if self._context.get('state_id'):
+            domain = domain or []
+            domain.append(('state_id', '=', self._context.get('state_id')))
+        return super(ResCity, self).search_read(domain=domain, fields=fields,
+                                              offset=offset, limit=limit, order=order)
