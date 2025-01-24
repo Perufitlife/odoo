@@ -5,10 +5,6 @@
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <!-- Keep city field but make it invisible -->
-            <field name="city" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </field>
 
             <field name="country_id" position="after">
                 <field name="state_id"

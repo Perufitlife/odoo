@@ -1,13 +1,13 @@
-from odoo import models, fields, api
-import requests
-from bs4 import BeautifulSoup
 import logging
+import requests
+
+from odoo import models, fields, api
 
 _logger = logging.getLogger(__name__)
 
 class DniCheckWizard(models.TransientModel):
     _name = 'dni.check.wizard'
-    _description = 'Wizard para consulta de DNI'
+    _description = 'Wizard para consulta de DNI (ApisPeru + dniperu fallback)'
 
     dni = fields.Char('DNI', readonly=True)
     nombres = fields.Char('Nombres')
@@ -19,8 +19,9 @@ class DniCheckWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        if 'dni' in res:
-            datos = self.consultar_dni(res['dni'])
+        dni_val = res.get('dni')
+        if dni_val:
+            datos = self.consultar_dni(dni_val)
             if datos:
                 res.update(datos)
             else:
@@ -29,20 +30,72 @@ class DniCheckWizard(models.TransientModel):
 
     def consultar_dni(self, dni):
         """
-        Consulta DNI en https://dniperu.com/querySelector
-        Envía POST con 'dni4': <DNI> y parsea la respuesta JSON.
+        Primero consulta a ApisPeru:
+          - Si encuentra datos, retorna esos.
+          - Si no, intenta con dniperu.com.
+          - Si tampoco funciona, retorna None.
         """
-        import requests
-        import logging
-        _logger = logging.getLogger(__name__)
+        datos_apis = self._consultar_dni_apisperu(dni)
+        if datos_apis:
+            return datos_apis
 
-        # URL donde se hace la búsqueda
+        # Si ApisPeru devolvió None / no data, 
+        # probamos dniperu:
+        datos_dniperu = self._consultar_dni_dniperu(dni)
+        if datos_dniperu:
+            return datos_dniperu
+
+        # Ninguno devolvió datos
+        return None
+
+    def _consultar_dni_apisperu(self, dni):
+        """
+        Lógica para ApisPeru. Usa tokens rotativos si así lo deseas,
+        o un token fijo. 
+        GET https://dniruc.apisperu.com/api/v1/dni/{dni}?token=XYZ
+        """
+        token = self._get_next_token()  # si tienes método para tokens rotativos
+        if not token:
+            _logger.info("No hay token configurado o no hay param 'apis_peru.tokens'")
+            return None
+
+        url = f"https://dniruc.apisperu.com/api/v1/dni/{dni}?token={token}"
+        _logger.info("Consultando DNI en ApisPeru: %s", url)
+
+        try:
+            resp = requests.get(url, timeout=10)
+            resp.raise_for_status()
+            data_json = resp.json()
+            _logger.debug("Respuesta ApisPeru: %s", data_json)
+
+            # caso OK => 'dni' en data_json
+            if 'dni' in data_json:
+                nombres = data_json.get('nombres', '')
+                ap_pat = data_json.get('apellidoPaterno', '')
+                ap_mat = data_json.get('apellidoMaterno', '')
+                if nombres:
+                    return {
+                        'nombres': nombres,
+                        'apellido_paterno': ap_pat,
+                        'apellido_materno': ap_mat
+                    }
+            else:
+                _logger.warning("ApisPeru: %s", data_json.get('message') or "No results")
+
+            return None
+
+        except Exception as e:
+            _logger.error("Error consultando ApisPeru: %s", e, exc_info=True)
+            return None
+
+    def _consultar_dni_dniperu(self, dni):
+        """
+        Lógica vieja de dniperu.com, 
+        POST a https://dniperu.com/querySelector con data={'dni4':dni}
+        """
         url_form = "https://dniperu.com/querySelector"
-
-        # Iniciamos sesión (opcional, en caso de querer cookies persistentes)
         session = requests.Session()
         session.headers.update({
-            # Ajusta tus cabeceras como desees, aquí un user-agent de ejemplo
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                 "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
@@ -51,32 +104,18 @@ class DniCheckWizard(models.TransientModel):
             "Origin": "https://dniperu.com",
             "Referer": "https://dniperu.com/buscar-dni-nombres-apellidos/",
         })
-
-        # data (o files) con el campo 'dni4' (que se ve en tu Network)
         payload = {"dni4": dni}
 
         try:
-            resp_post = session.post(url_form, data=payload)
-            _logger.info("POST status code: %s", resp_post.status_code)
+            resp_post = session.post(url_form, data=payload, timeout=10)
+            _logger.info("Dniperu POST status: %s", resp_post.status_code)
             if resp_post.status_code != 200:
                 return None
 
-            # La respuesta es JSON (según tu Network). Ejemplo:
-            # { "mensaje": "Número de DNI: 47856459\nNombres: RENZO ANTONIO\nApellido Paterno: MADUEÑO\nApellido Materno: CARCELEN\n..." }
             data_json = resp_post.json()
-            # Extraer 'mensaje':
             mensaje_raw = data_json.get("mensaje", "")
-            # 'mensaje_raw' contiene algo como:
-            # "Número de DNI: 47856459\nNombres: RENZO ANTONIO\nApellido Paterno: MADUEÑO\nApellido Materno: CARCELEN\nCódigo de Verificación: 2"
-
-            # Dividir por saltos de línea
             lineas = mensaje_raw.split("\n")
-            # lineas[1] = "Nombres: RENZO ANTONIO"
-            # lineas[2] = "Apellido Paterno: MADUEÑO"
-            # lineas[3] = "Apellido Materno: CARCELEN"
-            # Ajusta según la estructura real.
 
-            # Extraer nombres y apellidos
             nombres = ""
             apellido_paterno = ""
             apellido_materno = ""
@@ -91,10 +130,8 @@ class DniCheckWizard(models.TransientModel):
                     apellido_materno = linea.replace("Apellido Materno:", "").strip()
 
             if not nombres:
-                # Si no hallamos nada, asumimos que no se encontraron datos
                 return None
 
-            # Retornar diccionario con lo que deseas guardar en Odoo
             return {
                 'nombres': nombres,
                 'apellido_paterno': apellido_paterno,
@@ -102,5 +139,30 @@ class DniCheckWizard(models.TransientModel):
             }
 
         except Exception as e:
-            _logger.error("Error al consultar DNI en dniperu.com: %s", e)
+            _logger.error("Error consultando dniperu.com: %s", e, exc_info=True)
             return None
+
+    def _get_next_token(self):
+        """
+        Opcional, si quieres usar la rotación de tokens para ApisPeru,
+        mismo approach que te pasé antes.
+        """
+        icp = self.env['ir.config_parameter'].sudo()
+        tokens_str = icp.get_param('apis_peru.tokens', '')
+        if not tokens_str.strip():
+            return None
+
+        tokens_list = [t.strip() for t in tokens_str.split(',') if t.strip()]
+        if not tokens_list:
+            return None
+
+        index_str = icp.get_param('apis_peru.token_index', '0')
+        try:
+            index = int(index_str)
+        except ValueError:
+            index = 0
+
+        token = tokens_list[index % len(tokens_list)]
+        icp.set_param('apis_peru.token_index', str(index+1))
+
+        return token

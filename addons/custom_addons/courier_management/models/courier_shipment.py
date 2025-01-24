@@ -16,7 +16,7 @@ SHIPMENT_STATES = [
 ]
 
 STATE_TRANSITIONS = {
-    'draft': ['scheduled', 'cancelled'],
+    'draft': ['scheduled', 'cancelled', 'despachado', 'in_transit'],
     'scheduled': ['in_transit', 'cancelled'],
     'in_transit': ['delivered', 'failed', 'cancelled'],
     'delivered': [],
@@ -149,6 +149,17 @@ class CourierShipment(models.Model):
         store=True
     )
     
+    settlement_state = fields.Selection([
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+        ('sale', 'Sales Order'),
+        ('done', 'Locked'),
+        ('cancel', 'Cancelled'),
+    ], string='Status', default='draft', tracking=True)
+
+
+    notes = fields.Text(string="Notas")
+
     # Campos Computados
     deliverable_lines = fields.Many2many(
         'sale.order.line',

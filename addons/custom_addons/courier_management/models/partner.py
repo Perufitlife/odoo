@@ -82,10 +82,12 @@ class ResPartner(models.Model):
 
     @api.onchange('city_id')
     def _onchange_city_id(self):
-        """Al cambiar ciudad, limpiar el distrito PE. 
-           Asegurar coherencia con state y country."""
+        """Al cambiar city_id, forzamos city y limpiamos distrito."""
         self.l10n_pe_district = False
         if self.city_id:
+            # Copiar city_id.name a city
+            self.city = self.city_id.name
+
             if self.city_id.state_id:
                 self.state_id = self.city_id.state_id
                 if self.state_id.country_id:
@@ -93,6 +95,8 @@ class ResPartner(models.Model):
             else:
                 self.state_id = False
                 self.country_id = False
+        else:
+            self.city = False
 
     # =========================================================================
     # Acción para ver envíos asociados a este partner
@@ -109,7 +113,6 @@ class ResPartner(models.Model):
             'context': {
                 'default_partner_id': self.id,
                 'default_carrier_id': self.preferred_carrier_id.id,
-                # Ya que ahora todo es l10n_pe_district, no necesitamos default_district_id
                 'default_l10n_pe_district': self.l10n_pe_district.id,
             }
         }
@@ -128,27 +131,19 @@ class ResPartner(models.Model):
         return action
 
     # =========================================================================
-    # Overrides de create y write para validar distrito
+    # Métodos CREATE / WRITE unificados
     # =========================================================================
-    def write(self, vals):
-        """Sobrescribe write para validaciones relacionadas a l10n_pe_district."""
-        if 'l10n_pe_district' in vals and vals['l10n_pe_district']:
-            district = self.env['l10n_pe.res.city.district'].browse(vals['l10n_pe_district'])
-            # Validar país = Perú
-            if district.city_id and district.city_id.state_id and district.city_id.state_id.country_id.code != 'PE':
-                raise ValidationError('El distrito debe pertenecer a Perú.')
-
-            # Validar que el distrito pertenezca a la ciudad dada
-            if 'city_id' in vals and vals['city_id']:
-                if district.city_id.id != vals['city_id']:
-                    raise ValidationError('El distrito debe pertenecer a la ciudad seleccionada.')
-
-        return super().write(vals)
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Sobrescribe create para validaciones relacionadas a l10n_pe_district."""
+        """
+        1) Valida l10n_pe_district y city_id pertenecientes a Perú, 
+        2) Copia city_id.name a city si no está definido, 
+        para manejar casos en que se crea sin pasar por onchange (webhooks).
+        """
         for vals in vals_list:
+
+            # --- (A) Validaciones de distrito
             if vals.get('l10n_pe_district'):
                 district = self.env['l10n_pe.res.city.district'].browse(vals['l10n_pe_district'])
                 # Validar país = Perú
@@ -163,4 +158,40 @@ class ResPartner(models.Model):
                 if vals.get('city_id') and district.city_id.id != vals['city_id']:
                     raise ValidationError('El distrito debe pertenecer a la ciudad seleccionada.')
 
+            # --- (B) city_id -> city
+            if vals.get('city_id'):
+                city_rec = self.env['res.city'].browse(vals['city_id'])
+                if city_rec and not vals.get('city'):
+                    vals['city'] = city_rec.name
+
         return super(ResPartner, self).create(vals_list)
+
+    def write(self, vals):
+        """
+        1) Valida l10n_pe_district y city_id, 
+        2) city_id -> city si no está definido,
+        cuando se editan partners existentes.
+        """
+        # --- (A) Validaciones de distrito
+        if 'l10n_pe_district' in vals and vals['l10n_pe_district']:
+            district = self.env['l10n_pe.res.city.district'].browse(vals['l10n_pe_district'])
+            # Validar país = Perú
+            if (
+                district.city_id
+                and district.city_id.state_id
+                and district.city_id.state_id.country_id.code != 'PE'
+            ):
+                raise ValidationError('El distrito debe pertenecer a Perú.')
+
+            # Validar que el distrito pertenezca a la ciudad dada
+            if 'city_id' in vals and vals['city_id']:
+                if district.city_id.id != vals['city_id']:
+                    raise ValidationError('El distrito debe pertenecer a la ciudad seleccionada.')
+
+        # --- (B) city_id -> city
+        if 'city_id' in vals and vals['city_id']:
+            city_rec = self.env['res.city'].browse(vals['city_id'])
+            if city_rec and not vals.get('city'):
+                vals['city'] = city_rec.name
+
+        return super(ResPartner, self).write(vals)

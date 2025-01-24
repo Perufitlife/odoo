@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="sale_order_quotation_tree_inherit_status" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.x_initial_status</field>
+        <field name="model">sale.order</field>
+        <!-- Vista árbol de Quotation -->
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="priority" eval="99"/>
+
+        <field name="arch" type="xml">
+            <!-- Insertar la columna después de partner_id -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="x_initial_status"
+                       string="Estado Inicial"
+                       widget="label_selection"
+                       options="{
+                         'classes': {
+                           'draft': 'muted',
+                           'whatsapp': 'info',
+                           'abandoned_cart': 'info',
+                           'order_completed': 'info',
+                           'scheduled': 'primary',
+                           'confirmed': 'success',
+                           'despachado': 'secondary',
+                           'in_transit': 'warning',
+                           'delivered': 'success',
+                           'failed': 'danger',
+                           'cancelled': 'danger',
+                           'reprogramado': 'success'
+                         }
+                       }"
+                />
+            </xpath>
+        </field>
+    </record>
+</odoo>

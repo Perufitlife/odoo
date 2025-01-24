@@ -1,0 +1,12 @@
+<odoo>
+    <record id="base.pe" model="res.country">
+        <field name="address_format">
+%street
+%street2
+%city
+%district
+%state_name
+%country_name
+        </field>
+    </record>
+</odoo>

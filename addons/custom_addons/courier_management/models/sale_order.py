@@ -26,6 +26,22 @@ class SaleOrder(models.Model):
         string='Transportista'
     )
 
+    # Campo de estado inicial para tu flujo personalizado
+    x_initial_status = fields.Selection([
+        ('draft', 'Borrador'),
+        ('whatsapp', 'Whatsapp'),
+        ('abandoned_cart', 'Carrito Abandonado'),
+        ('order_completed', 'Orden Completa'),
+        ('scheduled', 'Programado'),  # Se mantiene aquí por si necesitas en otro punto
+        ('confirmed', 'Confirmado'),
+        ('esperando_adelanto', 'Esperando Adelanto'),
+        ('despachado', 'Despachado'),
+        ('in_transit', 'En Tránsito'),
+        ('delivered', 'Entregado'),
+        ('failed', 'No Entregado'),
+        ('cancelled', 'Cancelado'),
+        ('reprogramado', 'Reprogramado'),
+    ], string='Estado Inicial', default='whatsapp', tracking=True)
 
     # =========================================================================
     # Cómputos de conteo de Envíos y Delivery
@@ -101,7 +117,7 @@ class SaleOrder(models.Model):
     def _onchange_carrier_id_custom(self):
         """Si se cambia manualmente el carrier, recalcular el costo de envío y establecer fecha de entrega."""
         if self.carrier_id:
-            if not self.commitment_date:  # Cambiar delivery_date por commitment_date
+            if not self.commitment_date:
                 self.commitment_date = fields.Datetime.now() + timedelta(days=1)
             self._compute_shipping_cost()
 
@@ -155,14 +171,13 @@ class SaleOrder(models.Model):
                     "No se pudo asignar un transportista a la orden. Por favor, configure las reglas de precios o asigne un transportista manualmente."
                 )
 
-        # 1) Confirmación estándar
+        # 1) Lógica nativa de confirmación (pasa a state='sale')
         res = super(SaleOrder, self).action_confirm()
 
-        # 2) Crear envíos y actualizar estados
+        # 2) Si la orden pasó a 'sale', marcamos x_initial_status='confirmed'
         for order in self:
             if order.state == 'sale':
-                # Actualizar x_initial_status si existe
-                if hasattr(order, 'x_initial_status') and order.x_initial_status != 'confirmed':
+                if order.x_initial_status != 'confirmed':
                     order.x_initial_status = 'confirmed'
 
                 # Verificar si ya existe un envío para esta orden
@@ -231,22 +246,17 @@ class SaleOrder(models.Model):
                 })
                 _logger.info(f"Actualizada fecha de entrega en envíos de la orden {order.name}")
 
-
     def write(self, vals):
         """Sobrescribimos write para:
-        1) Manejar x_initial_status (como ya lo tienes).
+        1) Manejar x_initial_status si quieres forzar ciertos cambios.
         2) Sincronizar commitment_date en los courier.shipments.
         """
         x_initial_status_nuevo = vals.get('x_initial_status', False)
-
-        # <<< INICIO DE BLOQUE FALTANTE >>>
-        # Verificar si se está actualizando commitment_date
         commitment_date_changed = 'commitment_date' in vals
-        # <<< FIN DE BLOQUE FALTANTE >>>
 
         res = super(SaleOrder, self).write(vals)
 
-        # Lógica tuya para x_initial_status
+        # Si x_initial_status se cambia a 'confirmed' desde la vista, creamos el shipment si no existía
         if x_initial_status_nuevo == 'confirmed':
             for order in self:
                 existing_shipments = self.env['courier.shipment'].search([
@@ -264,20 +274,19 @@ class SaleOrder(models.Model):
                     })
                     shipment._update_delivery_fee()
 
-        # <<< INICIO DE BLOQUE FALTANTE >>>
-        # Si cambió el commitment_date, forzamos la actualización en todos sus envíos
+        # Si cambió el commitment_date, actualizar en los envíos
         if commitment_date_changed:
             for order in self:
                 if order.shipment_ids:
                     order.shipment_ids.write({
                         'delivery_date': order.commitment_date
                     })
-        # <<< FIN DE BLOQUE FALTANTE >>>
 
         return res
 
+
     def _compute_shipping_cost(self):
-        """Busca la regla de precio y actualiza/crea línea SHIP en la orden."""
+        """Busca la regla de precio y actualiza o crea la línea SHIP en la orden."""
         for order in self:
             if not order.carrier_id or not order.partner_id:
                 continue
@@ -286,21 +295,26 @@ class SaleOrder(models.Model):
             if not district:
                 continue
 
+            # Buscar una regla de precio que coincida con carrier + distrito
             domain = [
                 ('carrier_id', '=', order.carrier_id.id),
                 ('district_id', '=', district.id)
             ]
-
             pricing_rule = self.env['courier.pricing.rule'].search(domain, limit=1)
+
             if pricing_rule:
                 price = pricing_rule.price
+                # Buscar si ya existe la línea de envío (default_code='SHIP')
                 shipping_lines = order.order_line.filtered(
                     lambda line: line.product_id.default_code == 'SHIP'
                 )
+                # Buscar el producto 'SHIP'
                 shipping_product = self.env['product.product'].search(
-                    [('default_code', '=', 'SHIP')], limit=1
+                    [('default_code', '=', 'SHIP')],
+                    limit=1
                 )
                 if not shipping_product:
+                    # Crear el producto si no existe
                     shipping_product = self.env['product.product'].create({
                         'name': 'Cargo por Envío',
                         'type': 'service',
@@ -314,8 +328,10 @@ class SaleOrder(models.Model):
                     })
 
                 if shipping_lines:
+                    # Si existe, actualizamos el precio
                     shipping_lines[0].price_unit = price
                 else:
+                    # Si no existe, creamos la línea 'SHIP'
                     new_line_vals = {
                         'order_id': order.id,
                         'product_id': shipping_product.id,
@@ -325,3 +341,6 @@ class SaleOrder(models.Model):
                         'customer_lead': 0.0,
                     }
                     order.write({'order_line': [(0, 0, new_line_vals)]})
+            else:
+                # No se encontró regla => podrías poner precio 0 o dejarla así
+                pass

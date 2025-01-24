@@ -5,7 +5,8 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-            <!-- Campo partner_shipping_id después de carrier_id -->
+
+            <!-- 1) Campo partner_shipping_id después de carrier_id -->
             <field name="carrier_id" position="after">
                 <field name="partner_shipping_id"
                        context="{'default_type': 'delivery'}"
@@ -13,17 +14,14 @@
                        domain="[('parent_id','=', partner_id), ('type','=','delivery')]"/>
             </field>
 
-            <!-- Mover commitment_date de forma más directa -->
-            <xpath expr="//group[@name='sale_shipping']" position="replace">
-                <group name="sale_shipping" string="Shipping">
-                    <field name="commitment_date" string="Delivery Date"/>
-                </group>
-            </xpath>
-
-            <!-- Agregar el nuevo campo commitment_date después del partner_id -->
+            <!-- 2) Insertar commitment_date y x_initial_status debajo de partner_id -->
             <field name="partner_id" position="after">
                 <field name="commitment_date" string="Delivery Date"/>
+                <field name="x_initial_status" string="Estado Inicial"/>
             </field>
+
+            <!-- Se elimina el replace del group sale_shipping 
+                 para que el comportamiento original no se altere -->
         </field>
     </record>
 </odoo>

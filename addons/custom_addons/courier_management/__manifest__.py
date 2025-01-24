@@ -19,40 +19,44 @@
         'l10n_pe',
         'delivery',
         'sale_stock',
+        'mail',
         'web',
         # Removemos 'shopify' ya que debería estar en un módulo puente separado
     ],
     'data': [
-        # 1. Datos de seguridad (primero siempre)
+        # 1. Seguridad
         'security/courier_management_security.xml',
         'security/ir.model.access.csv',
 
-        # 2. Datos y secuencias
+        # 2. Datos, secuencias
         'data/sequence.xml',
         'data/no_delivery_reason_data.xml',
-
-        # 3. Wizards (agrupados juntos)
-        'wizard/shipment_verification_wizard_views.xml',  # Renombrado y reubicado
-        'wizard/no_entregado_wizard_views.xml',          # Movido a carpeta wizard
-        'wizard/reprogramar_wizard_views.xml',           # Movido a carpeta wizard
+        'data/address_format_pe.xml',
+        # 3. Wizards
+        'wizards/verification_wizard_views.xml',
+        'wizards/no_entregado_wizard_views.xml',
+        'wizards/reprogramar_wizard_views.xml',
 
         # 4. Vistas principales
-        'views/courier_shipment_views.xml',              # Renombrado para claridad
-        'views/courier_carrier_views.xml',               # Renombrado para claridad
-        'views/courier_pricing_rule_views.xml',          # Renombrado para claridad
-        
-        # 5. Vistas heredadas
+        #    NOTA: Mueve "courier_shipment_views.xml" antes que "courier_carrier_views.xml"
+        'views/courier_shipment_views.xml',    # define menu_courier_config
+        'views/courier_carrier_views.xml',     # usa parent="menu_courier_config"
+        'views/courier_pricing_rule_views.xml',
+        'views/sale_order_inherit_views.xml',
+        'views/sale_order_inherit_quotation_tree.xml',
+
+        # 5. Otras vistas heredadas
         'views/sale_order_views.xml',
         'views/partner_views.xml',
         'views/partner_address_views.xml',
-        
-        # 6. Vistas de tablero y reportes
-        'views/courier_dispatch_board_view.xml',         # Renombrado para claridad
+        'views/sale_order_inherit_contact_address.xml',
+
+        # 6. Tableros y reportes
+        'views/courier_dispatch_board_view.xml',
         'views/courier_kanban_view.xml',
         'report/shipment_reports.xml',
-        'report/shipment_labels.xml',                    # Movido a carpeta report
     ],
-
+    
     'assets': {
         'web.assets_backend': [
             # CSS
