@@ -1,3 +1,5 @@
+from odoo import models
+
 class ProductAttributeLine(models.Model):
     _inherit = 'product.template.attribute.line'
 
