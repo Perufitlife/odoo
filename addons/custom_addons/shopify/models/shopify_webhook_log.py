@@ -124,12 +124,14 @@ class ShopifyWebhookLog(models.Model):
         """
         Procesa los datos del cliente y crea o actualiza un cliente en res.partner.
         """
-        if not customer_data.get('email') and not customer_data.get('phone'):
-            raise ValueError("El payload del cliente no contiene un correo electrónico ni un número de teléfono válido.")
-
-        phone = customer_data.get('phone') or customer_data.get('default_address', {}).get('phone')
+        # Extraer datos básicos del cliente
         email = customer_data.get('email')
+        phone = customer_data.get('phone') or customer_data.get('default_address', {}).get('phone')
+        first_name = customer_data.get('first_name', '').strip()
+        last_name = customer_data.get('last_name', '').strip()
+        full_name = f"{first_name} {last_name}".strip() or f"Cliente Anónimo {fields.Datetime.now()}"
 
+        # Procesar ubicación
         location_data = {
             'department': '',
             'province': '',
@@ -155,10 +157,12 @@ class ShopifyWebhookLog(models.Model):
             if not location_data['reference']:
                 location_data['reference'] = shipping_address.get('company')
 
+        # Buscar país
         country = self.env['res.country'].sudo().search([('code', '=', 'PE')], limit=1)
         if not country:
             raise ValueError("No se encontró el país Perú en la base de datos")
 
+        # Procesar departamento/estado
         state = False
         state_name = location_data['department']
         if state_name:
@@ -175,37 +179,24 @@ class ShopifyWebhookLog(models.Model):
 
         # Buscar Provincia/Ciudad
         city = False
-        normalized_province = ''
         if state and location_data['province']:
             normalized_province = self.normalize_text(location_data['province'])
-            # 1) Eliminamos espacios en la provincia normalizada
             normalized_province_no_spaces = normalized_province.replace(' ', '')
 
             cities = self.env['res.city'].sudo().search([
                 ('state_id', '=', state.id)
             ])
 
-            city = False
             for possible_city in cities:
-                # 2) También eliminamos espacios en el nombre de la ciudad
                 possible_name = self.normalize_text(possible_city.name)
                 possible_name_no_spaces = possible_name.replace(' ', '')
 
-                # 3) Comparamos ambas cadenas "sin espacios"
                 if possible_name_no_spaces == normalized_province_no_spaces:
                     city = possible_city
                     break
 
-        _logger.info(f"""
-            Búsqueda de provincia:
-            - Valor original: {location_data['province']}
-            - Normalizado: {normalized_province}
-            - Resultado: {city.name if city else 'No encontrado'}
-        """)
-
         # Buscar Distrito
         district = False
-        normalized_district = ''
         if city and location_data['district']:
             normalized_district = self.normalize_text(location_data['district'])
             normalized_district_no_spaces = normalized_district.replace(' ', '')
@@ -214,7 +205,6 @@ class ShopifyWebhookLog(models.Model):
                 ('city_id', '=', city.id)
             ])
 
-            district = False
             for possible_district in districts:
                 possible_district_name = self.normalize_text(possible_district.name)
                 possible_district_name_no_spaces = possible_district_name.replace(' ', '')
@@ -223,15 +213,9 @@ class ShopifyWebhookLog(models.Model):
                     district = possible_district
                     break
 
-        _logger.info(f"""
-            Búsqueda de distrito:
-            - Valor original: {location_data['district']}
-            - Normalizado: {normalized_district}
-            - Resultado: {district.name if district else 'No encontrado'}
-        """)
-
+        # Construir valores del partner
         partner_vals = {
-            'name': f"{customer_data.get('first_name', '')} {customer_data.get('last_name', '')}".strip(),
+            'name': full_name,
             'email': email,
             'phone': phone,
             'street': location_data['street'],
@@ -262,9 +246,18 @@ class ShopifyWebhookLog(models.Model):
                     'l10n_latam_identification_type_id': dni_type.id
                 })
 
-        partner = self.env['res.partner'].sudo().search([
-            '|', ('phone', '=', phone), ('email', '=', email)
-        ], limit=1)
+        # Buscar o crear partner
+        domain = []
+        if email:
+            domain.append(('email', '=', email))
+        if phone:
+            domain.append(('phone', '=', phone))
+        
+        if domain:
+            domain = ['|'] * (len(domain) - 1) + domain
+            partner = self.env['res.partner'].sudo().search(domain, limit=1)
+        else:
+            partner = False
 
         if partner:
             partner.sudo().write(partner_vals)
@@ -274,6 +267,7 @@ class ShopifyWebhookLog(models.Model):
             _logger.info(f"Cliente creado con ID: {partner.id}")
 
         return partner
+
     def find_or_create_product(self, item_data):
         """
         Busca o crea un producto basado en los datos de Shopify
