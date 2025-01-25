@@ -332,24 +332,17 @@ class ShopifyWebhookLog(models.Model):
         """
         product = self.find_or_create_product(item_data)
         quantity = float(item_data.get('quantity', 1.0))
-        
-        # Tomamos el precio directo del payload (sin quitar IGV)
         price_unit = float(item_data.get('price', 0.0))
 
         # Calcular descuentos
         discount_allocations = item_data.get('discount_allocations', [])
         total_discount = sum(float(allocation.get('amount', 0)) for allocation in discount_allocations)
 
-        # Si quieres tomar como base el mismo 'price_unit', haz:
         line_total = price_unit * quantity
+        discount_percentage = (total_discount / line_total) * 100 if line_total > 0 else 0.0
 
-        if line_total > 0:
-            discount_percentage = (total_discount / line_total) * 100
-        else:
-            discount_percentage = 0.0
-
-        # Preparar nombre de la línea
-        line_name = product.name
+        # Preparar nombre de la línea - FIXED
+        line_name = item_data.get('title') or product.name
         variant_title = item_data.get('variant_title')
         if variant_title:
             line_name = f"{line_name} - {variant_title}"
@@ -360,10 +353,13 @@ class ShopifyWebhookLog(models.Model):
             'name': line_name,
             'product_uom_qty': quantity,
             'product_uom': product.uom_id.id,
-            'price_unit': price_unit,     # Tomamos el precio tal cual
+            'price_unit': price_unit,
             'discount': discount_percentage,
             'tax_id': [(6, 0, [igv_tax.id])] if igv_tax else [(6, 0, [])],
         }
+
+        order_line = self.env['sale.order.line'].sudo().create(vals)
+        return order_line
 
         order_line = self.env['sale.order.line'].sudo().create(vals)
         return order_line
