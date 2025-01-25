@@ -49,13 +49,32 @@ class ShopifyWebhookLog(models.Model):
     # Nuevos campos para mejor seguimiento
     shopify_order_id = fields.Char(string='Shopify Order ID', tracking=True)
     sale_order_id = fields.Many2one('sale.order', string='Orden de Venta', tracking=True)
+    customer_name = fields.Char(string='Nombre del Cliente')
 
     @api.model
     def create(self, vals):
-        """Genera un nombre secuencial para el registro del webhook"""
+        """Genera un nombre secuencial para el registro del webhook
+           y extrae el nombre del cliente si se encuentra en el payload."""
+        # Asignar un nombre secuencial si no existe
         if not vals.get('name'):
             vals['name'] = self.env['ir.sequence'].next_by_code('shopify.webhook.log') or 'SHOP/WH/000'
-        return super().create(vals)
+
+        # Intentar parsear el payload para extraer el nombre del cliente
+        payload_str = vals.get('payload')
+        if payload_str:
+            try:
+                data = json.loads(payload_str)
+                customer = data.get('customer', {})
+                first_name = customer.get('first_name') or ''
+                last_name = customer.get('last_name') or ''
+                full_name = (first_name + ' ' + last_name).strip()
+                if full_name:
+                    vals['customer_name'] = full_name
+            except Exception as e:
+                _logger.warning("No se pudo parsear el payload para obtener el nombre del cliente: %s", e)
+
+        return super(ShopifyWebhookLog, self).create(vals)
+
     @staticmethod
     def normalize_text(text):
         """
