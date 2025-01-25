@@ -121,153 +121,167 @@ class ShopifyWebhookLog(models.Model):
         return location_data
 
     def process_customer(self, customer_data, order_data):
-        """
-        Procesa los datos del cliente y crea o actualiza un cliente en res.partner.
-        """
-        # Extraer datos básicos del cliente
-        email = customer_data.get('email')
-        phone = customer_data.get('phone') or customer_data.get('default_address', {}).get('phone')
-        first_name = customer_data.get('first_name', '').strip()
-        last_name = customer_data.get('last_name', '').strip()
-        full_name = f"{first_name} {last_name}".strip() or f"Cliente Anónimo {fields.Datetime.now()}"
-
-        # Procesar ubicación
-        location_data = {
-            'department': '',
-            'province': '',
-            'district': '',
-            'street': '',
-            'reference': '',
-        }
-
-        if order_data.get('note_attributes'):
-            location_data.update(self.get_location_from_note_attributes(order_data['note_attributes']))
-            _logger.info(f"Datos obtenidos de note_attributes: {location_data}")
-
-        shipping_address = order_data.get('shipping_address', {})
-        if shipping_address:
-            if not location_data['department']:
-                location_data['department'] = shipping_address.get('province_code')
-            if not location_data['province']:
-                location_data['province'] = shipping_address.get('province', shipping_address.get('city'))
-            if not location_data['district']:
-                location_data['district'] = shipping_address.get('address2')
-            if not location_data['street']:
-                location_data['street'] = shipping_address.get('address1')
-            if not location_data['reference']:
-                location_data['reference'] = shipping_address.get('company')
-
-        # Buscar país
-        country = self.env['res.country'].sudo().search([('code', '=', 'PE')], limit=1)
-        if not country:
-            raise ValueError("No se encontró el país Perú en la base de datos")
-
-        # Procesar departamento/estado
-        state = False
-        state_name = location_data['department']
-        if state_name:
-            if state_name.startswith('PE-'):
-                state_code = state_name[3:]
-                state_code = PAYLOAD_TO_DB_CODES.get(state_code, state_code)
-            else:
-                state_code = PAYLOAD_TO_DB_CODES.get(state_name, state_name)
-
-            state = self.env['res.country.state'].sudo().search([
-                ('code', '=', state_code),
-                ('country_id', '=', country.id)
-            ], limit=1)
-
-        # Buscar Provincia/Ciudad
-        city = False
-        if state and location_data['province']:
-            normalized_province = self.normalize_text(location_data['province'])
-            normalized_province_no_spaces = normalized_province.replace(' ', '')
-
-            cities = self.env['res.city'].sudo().search([
-                ('state_id', '=', state.id)
-            ])
-
-            for possible_city in cities:
-                possible_name = self.normalize_text(possible_city.name)
-                possible_name_no_spaces = possible_name.replace(' ', '')
-
-                if possible_name_no_spaces == normalized_province_no_spaces:
-                    city = possible_city
-                    break
-
-        # Buscar Distrito
-        district = False
-        if city and location_data['district']:
-            normalized_district = self.normalize_text(location_data['district'])
-            normalized_district_no_spaces = normalized_district.replace(' ', '')
-
-            districts = self.env['l10n_pe.res.city.district'].sudo().search([
-                ('city_id', '=', city.id)
-            ])
-
-            for possible_district in districts:
-                possible_district_name = self.normalize_text(possible_district.name)
-                possible_district_name_no_spaces = possible_district_name.replace(' ', '')
-
-                if possible_district_name_no_spaces == normalized_district_no_spaces:
-                    district = possible_district
-                    break
-
-        # Construir valores del partner
+    """
+    Procesa los datos del cliente y crea o actualiza un cliente en res.partner.
+    Maneja casos donde customer_data puede ser None.
+    """
+    if not customer_data:
+        timestamp = fields.Datetime.now().strftime('%Y%m%d%H%M%S')
         partner_vals = {
-            'name': full_name,
-            'email': email,
-            'phone': phone,
-            'street': location_data['street'],
-            'street2': location_data['reference'],
-            'country_id': country.id,
-            'state_id': state.id if state else False,
-            'city_id': city.id if city else False,
-            'l10n_pe_district': district.id if district else False,
+            'name': f'Cliente Anónimo {timestamp}',
+            'email': False,
+            'phone': False,
+            'country_id': self.env['res.country'].sudo().search([('code', '=', 'PE')], limit=1).id
         }
-
-        # Detectar DNI
-        dni = None
-        if order_data.get('note_attributes'):
-            for attr in order_data['note_attributes']:
-                if any(pattern in attr.get('name', '').lower() for pattern in DNI_PATTERNS):
-                    dni_value = attr.get('value', '').strip()
-                    if dni_value and dni_value.isdigit():
-                        dni = dni_value
-                        break
-
-        if dni:
-            dni_type = self.env['l10n_latam.identification.type'].sudo().search([
-                ('name', 'ilike', 'DNI')
-            ], limit=1)
-            if dni_type:
-                partner_vals.update({
-                    'vat': dni,
-                    'l10n_latam_identification_type_id': dni_type.id
-                })
-
-        # Buscar o crear partner
-        domain = []
-        if email:
-            domain.append(('email', '=', email))
-        if phone:
-            domain.append(('phone', '=', phone))
-        
-        if domain:
-            domain = ['|'] * (len(domain) - 1) + domain
-            partner = self.env['res.partner'].sudo().search(domain, limit=1)
-        else:
-            partner = False
-
-        if partner:
-            partner.sudo().write(partner_vals)
-            _logger.info(f"Cliente actualizado con ID: {partner.id}")
-        else:
-            partner = self.env['res.partner'].sudo().create(partner_vals)
-            _logger.info(f"Cliente creado con ID: {partner.id}")
-
+        partner = self.env['res.partner'].sudo().create(partner_vals)
+        _logger.info(f"Cliente anónimo creado con ID: {partner.id}")
         return partner
 
+    # Extraer datos básicos del cliente
+    email = customer_data.get('email', '')
+    phone = customer_data.get('phone') or customer_data.get('default_address', {}).get('phone', '')
+    first_name = (customer_data.get('first_name') or '').strip()
+    last_name = (customer_data.get('last_name') or '').strip()
+    timestamp = fields.Datetime.now().strftime('%Y%m%d%H%M%S')
+    full_name = f"{first_name} {last_name}".strip() or f"Cliente Anónimo {timestamp}"
+
+    # Procesar ubicación
+    location_data = {
+        'department': '',
+        'province': '',
+        'district': '',
+        'street': '',
+        'reference': '',
+    }
+
+    if order_data.get('note_attributes'):
+        location_data.update(self.get_location_from_note_attributes(order_data['note_attributes']))
+        _logger.info(f"Datos obtenidos de note_attributes: {location_data}")
+
+    shipping_address = order_data.get('shipping_address', {})
+    if shipping_address:
+        if not location_data['department']:
+            location_data['department'] = shipping_address.get('province_code')
+        if not location_data['province']:
+            location_data['province'] = shipping_address.get('province', shipping_address.get('city'))
+        if not location_data['district']:
+            location_data['district'] = shipping_address.get('address2')
+        if not location_data['street']:
+            location_data['street'] = shipping_address.get('address1')
+        if not location_data['reference']:
+            location_data['reference'] = shipping_address.get('company')
+
+    # Buscar país
+    country = self.env['res.country'].sudo().search([('code', '=', 'PE')], limit=1)
+    if not country:
+        raise ValueError("No se encontró el país Perú en la base de datos")
+
+    # Procesar departamento/estado
+    state = False
+    state_name = location_data['department']
+    if state_name:
+        if state_name.startswith('PE-'):
+            state_code = state_name[3:]
+            state_code = PAYLOAD_TO_DB_CODES.get(state_code, state_code)
+        else:
+            state_code = PAYLOAD_TO_DB_CODES.get(state_name, state_name)
+
+        state = self.env['res.country.state'].sudo().search([
+            ('code', '=', state_code),
+            ('country_id', '=', country.id)
+        ], limit=1)
+
+    # Buscar Provincia/Ciudad
+    city = False
+    if state and location_data['province']:
+        normalized_province = self.normalize_text(location_data['province'])
+        normalized_province_no_spaces = normalized_province.replace(' ', '')
+
+        cities = self.env['res.city'].sudo().search([
+            ('state_id', '=', state.id)
+        ])
+
+        for possible_city in cities:
+            possible_name = self.normalize_text(possible_city.name)
+            possible_name_no_spaces = possible_name.replace(' ', '')
+
+            if possible_name_no_spaces == normalized_province_no_spaces:
+                city = possible_city
+                break
+
+    # Buscar Distrito
+    district = False
+    if city and location_data['district']:
+        normalized_district = self.normalize_text(location_data['district'])
+        normalized_district_no_spaces = normalized_district.replace(' ', '')
+
+        districts = self.env['l10n_pe.res.city.district'].sudo().search([
+            ('city_id', '=', city.id)
+        ])
+
+        for possible_district in districts:
+            possible_district_name = self.normalize_text(possible_district.name)
+            possible_district_name_no_spaces = possible_district_name.replace(' ', '')
+
+            if possible_district_name_no_spaces == normalized_district_no_spaces:
+                district = possible_district
+                break
+
+    # Construir valores del partner
+    partner_vals = {
+        'name': full_name,
+        'email': email,
+        'phone': phone,
+        'street': location_data['street'],
+        'street2': location_data['reference'],
+        'country_id': country.id,
+        'state_id': state.id if state else False,
+        'city_id': city.id if city else False,
+        'l10n_pe_district': district.id if district else False,
+    }
+
+    # Detectar DNI
+    dni = None
+    if order_data.get('note_attributes'):
+        for attr in order_data['note_attributes']:
+            if any(pattern in (attr.get('name') or '').lower() for pattern in DNI_PATTERNS):
+                dni_value = (attr.get('value') or '').strip()
+                if dni_value and dni_value.isdigit():
+                    dni = dni_value
+                    break
+
+    if dni:
+        dni_type = self.env['l10n_latam.identification.type'].sudo().search([
+            ('name', 'ilike', 'DNI')
+        ], limit=1)
+        if dni_type:
+            partner_vals.update({
+                'vat': dni,
+                'l10n_latam_identification_type_id': dni_type.id
+            })
+
+    # Buscar o crear partner
+    domain = []
+    if email:
+        domain.append(('email', '=', email))
+    if phone:
+        domain.append(('phone', '=', phone))
+
+    if domain:
+        domain = ['|'] * (len(domain) - 1) + domain
+        partner = self.env['res.partner'].sudo().search(domain, limit=1)
+    else:
+        partner = False
+
+    if partner:
+        partner.sudo().write(partner_vals)
+        _logger.info(f"Cliente actualizado con ID: {partner.id}")
+    else:
+        partner = self.env['res.partner'].sudo().create(partner_vals)
+        _logger.info(f"Cliente creado con ID: {partner.id}")
+
+    return partner
+    
     def find_or_create_product(self, item_data):
         """
         Busca o crea un producto basado en los datos de Shopify
