@@ -328,7 +328,7 @@ class ShopifyWebhookLog(models.Model):
 
     def process_order_line(self, order, item_data, igv_tax):
         """
-        Procesa una línea de pedido individual
+        Procesa una línea de pedido individual sin IGV
         """
         product = self.find_or_create_product(item_data)
         quantity = float(item_data.get('quantity', 1.0))
@@ -341,7 +341,6 @@ class ShopifyWebhookLog(models.Model):
         line_total = price_unit * quantity
         discount_percentage = (total_discount / line_total) * 100 if line_total > 0 else 0.0
 
-        # Preparar nombre de la línea - FIXED
         line_name = item_data.get('title') or product.name
         variant_title = item_data.get('variant_title')
         if variant_title:
@@ -355,15 +354,11 @@ class ShopifyWebhookLog(models.Model):
             'product_uom': product.uom_id.id,
             'price_unit': price_unit,
             'discount': discount_percentage,
-            'tax_id': [(6, 0, [igv_tax.id])] if igv_tax else [(6, 0, [])],
+            'tax_id': [(6, 0, [])]  # Empty tax assignment
         }
 
-        order_line = self.env['sale.order.line'].sudo().create(vals)
-        return order_line
-
-        order_line = self.env['sale.order.line'].sudo().create(vals)
-        return order_line
-
+        return self.env['sale.order.line'].sudo().create(vals)
+        
     def process_order(self, order_data, store):
         """
         Procesa una orden completa de Shopify
