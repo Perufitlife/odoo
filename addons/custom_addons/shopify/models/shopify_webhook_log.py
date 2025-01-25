@@ -310,7 +310,7 @@ class ShopifyWebhookLog(models.Model):
             'sale_ok': True,
             'purchase_ok': True,
             'list_price': price,
-            'standard_price': price
+            'standard_price': price,
             'uom_id': self.env.ref('uom.product_uom_unit').id,
             'uom_po_id': self.env.ref('uom.product_uom_unit').id,
             'invoice_policy': 'order',
