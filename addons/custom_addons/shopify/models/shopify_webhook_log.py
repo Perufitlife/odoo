@@ -333,27 +333,16 @@ class ShopifyWebhookLog(models.Model):
         product = self.find_or_create_product(item_data)
         quantity = float(item_data.get('quantity', 1.0))
         
-        # El precio viene con IGV incluido, necesitamos calcularlo sin IGV
+        # Tomamos el precio directo del payload (sin quitar IGV)
         price_unit = float(item_data.get('price', 0.0))
 
-        vals = {
-            'order_id': order.id,
-            'product_id': product.id,
-            'name': line_name,
-            'product_uom_qty': quantity,
-            'product_uom': product.uom_id.id,
-            'price_unit': price_unit,  # Tomamos el precio tal cual sin dividir por IGV
-            'discount': discount_percentage,
-            # No asignamos impuestos
-            'tax_id': [(6, 0, [])],
-        }
-        
         # Calcular descuentos
         discount_allocations = item_data.get('discount_allocations', [])
         total_discount = sum(float(allocation.get('amount', 0)) for allocation in discount_allocations)
-        
-        # El descuento viene para toda la línea, necesitamos convertirlo a porcentaje
-        line_total = price_unit_with_tax * quantity
+
+        # Si quieres tomar como base el mismo 'price_unit', haz:
+        line_total = price_unit * quantity
+
         if line_total > 0:
             discount_percentage = (total_discount / line_total) * 100
         else:
@@ -371,15 +360,13 @@ class ShopifyWebhookLog(models.Model):
             'name': line_name,
             'product_uom_qty': quantity,
             'product_uom': product.uom_id.id,
-            'price_unit': price_unit,  # Precio sin IGV
+            'price_unit': price_unit,     # Tomamos el precio tal cual
             'discount': discount_percentage,
             'tax_id': [(6, 0, [igv_tax.id])] if igv_tax else [(6, 0, [])],
         }
 
-        # Crear la línea de orden
         order_line = self.env['sale.order.line'].sudo().create(vals)
         return order_line
-
 
     def process_order(self, order_data, store):
         """
