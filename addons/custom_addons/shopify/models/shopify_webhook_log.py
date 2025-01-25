@@ -310,7 +310,7 @@ class ShopifyWebhookLog(models.Model):
             'sale_ok': True,
             'purchase_ok': True,
             'list_price': price,
-            'standard_price': price * 0.8,  # Costo estimado como 80% del precio de venta
+            'standard_price': price
             'uom_id': self.env.ref('uom.product_uom_unit').id,
             'uom_po_id': self.env.ref('uom.product_uom_unit').id,
             'invoice_policy': 'order',
@@ -334,8 +334,19 @@ class ShopifyWebhookLog(models.Model):
         quantity = float(item_data.get('quantity', 1.0))
         
         # El precio viene con IGV incluido, necesitamos calcularlo sin IGV
-        price_unit_with_tax = float(item_data.get('price', 0.0))
-        price_unit = price_unit_with_tax / 1.18  # Quitamos el IGV para tener el precio base
+        price_unit = float(item_data.get('price', 0.0))
+
+        vals = {
+            'order_id': order.id,
+            'product_id': product.id,
+            'name': line_name,
+            'product_uom_qty': quantity,
+            'product_uom': product.uom_id.id,
+            'price_unit': price_unit,  # Tomamos el precio tal cual sin dividir por IGV
+            'discount': discount_percentage,
+            # No asignamos impuestos
+            'tax_id': [(6, 0, [])],
+        }
         
         # Calcular descuentos
         discount_allocations = item_data.get('discount_allocations', [])
