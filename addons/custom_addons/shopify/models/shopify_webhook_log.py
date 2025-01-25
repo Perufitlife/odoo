@@ -121,21 +121,31 @@ class ShopifyWebhookLog(models.Model):
         return location_data
 
     def process_customer(self, customer_data, order_data):
-        """
-        Procesa los datos del cliente y crea o actualiza un cliente en res.partner.
-        Maneja casos donde customer_data puede ser None.
-        """
-        if not customer_data:
-            timestamp = fields.Datetime.now().strftime('%Y%m%d%H%M%S')
+        """Procesa datos del cliente, priorizando shipping_address para draft orders"""
+        if not customer_data or not customer_data.get('first_name'):
+            # Obtener datos de shipping_address
+            shipping_address = order_data.get('shipping_address', {})
+            if shipping_address:
+                first_name = shipping_address.get('first_name', '').strip()
+                last_name = shipping_address.get('last_name', '').strip()
+                phone = shipping_address.get('phone', '')
+                timestamp = fields.Datetime.now().strftime('%Y%m%d%H%M%S')
+                full_name = f"{first_name} {last_name}".strip() or f"Cliente Anónimo {timestamp}"
+            else:
+                timestamp = fields.Datetime.now().strftime('%Y%m%d%H%M%S')
+                full_name = f"Cliente Anónimo {timestamp}"
+                phone = ''
+
             partner_vals = {
-                'name': f'Cliente Anónimo {timestamp}',
+                'name': full_name,
                 'email': False,
-                'phone': False,
+                'phone': phone,
                 'country_id': self.env['res.country'].sudo().search([('code', '=', 'PE')], limit=1).id
             }
             partner = self.env['res.partner'].sudo().create(partner_vals)
-            _logger.info(f"Cliente anónimo creado con ID: {partner.id}")
+            _logger.info(f"Cliente creado desde shipping_address con ID: {partner.id}")
             return partner
+
 
         # Extraer datos básicos del cliente
         email = customer_data.get('email', '')
