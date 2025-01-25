@@ -18,6 +18,7 @@
         'views/shopify_webhook_views.xml',
         'views/shopify_menus.xml',
         "views/sale_order_inherit_views.xml",
+        'views/product_views.xml', 
     ],
     'installable': True,
     'application': True,

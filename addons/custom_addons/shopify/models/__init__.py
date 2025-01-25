@@ -6,3 +6,4 @@ from . import shopify_actions
 from . import shopify_validation_rule
 from . import res_partner
 from . import sale_order_inherit
+from . import product
