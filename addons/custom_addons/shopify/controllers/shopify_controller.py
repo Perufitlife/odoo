@@ -57,33 +57,53 @@ class ShopifyController(http.Controller):
             data = json.loads(payload)
             shopify_topic = http.request.httprequest.headers.get('X-Shopify-Topic', 'unknown')
 
-            # Preparar datos del webhook con usuario y tienda
+            # Preparar valores para crear log
             data['store_id'] = store_id
             webhook_vals = {
                 'name': f'Webhook {shopify_topic}',
                 'payload': json.dumps(data),
                 'event_type': shopify_topic,
-                'state': 'pending',  # Se mantiene en pendiente para procesamiento manual
-                'shopify_order_id': str(data.get('id', '')),  # Guardar ID de la orden
+                'state': 'pending',  
+                'shopify_order_id': str(data.get('id', '')),
             }
 
-            # Solo crear el webhook log, sin procesarlo
+            # Crear registro de log
             ShopifyWebhookLog = env['shopify.webhook.log'].sudo()
             log = ShopifyWebhookLog.with_user(uid).create(webhook_vals)
 
-            return Response(
-                json.dumps({
-                    "status": "success",
-                    "log_id": log.id,
-                    "message": "Webhook recibido y pendiente de procesamiento"
-                }),
-                content_type='application/json',
-                status=200
-            )
+            # === PROCESAR AUTOMÁTICAMENTE EL WEBHOOK ===
+            try:
+                # Llamamos el método que procesa el webhook
+                log.action_process_webhook()
+                return Response(
+                    json.dumps({
+                        "status": "success",
+                        "log_id": log.id,
+                        "message": "Webhook recibido y procesado automáticamente."
+                    }),
+                    content_type='application/json',
+                    status=200
+                )
+            except Exception as process_error:
+                error_message = str(process_error)
+                _logger.error("Error procesando webhook automáticamente: %s", error_message)
+                # Marcamos el log como fallido
+                log.write({
+                    'state': 'failed',
+                    'error_message': error_message
+                })
+                return Response(
+                    json.dumps({
+                        "status": "error",
+                        "message": error_message
+                    }),
+                    content_type='application/json',
+                    status=500
+                )
 
         except Exception as e:
             error_message = str(e)
-            _logger.error("Error procesando webhook: %s", error_message)
+            _logger.error("Error en el webhook: %s", error_message)
             return Response(
                 json.dumps({
                     "status": "error",
