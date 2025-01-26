@@ -28,7 +28,7 @@ class PendingReasonWizard(models.TransientModel):
         
         # Luego cambiamos el estado a pendiente
         order.write({
-            'x_initial_status': 'pendiente'
+            'x_initial_status': 'pending'
         })
 
     def _assign_uchat_tag(self, order, tag_name):
