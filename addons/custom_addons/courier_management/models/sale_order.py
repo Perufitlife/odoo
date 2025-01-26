@@ -33,6 +33,7 @@ class SaleOrder(models.Model):
         ('abandoned_cart', 'Carrito Abandonado'),
         ('order_completed', 'Orden Completa'),
         ('scheduled', 'Programado'),  # Se mantiene aquí por si necesitas en otro punto
+        ('pending', 'Pendiente'),  # Se mantiene aquí por si necesitas en otro punto
         ('confirmed', 'Confirmado'),
         ('esperando_adelanto', 'Esperando Adelanto'),
         ('despachado', 'Despachado'),
