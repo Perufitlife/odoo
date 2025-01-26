@@ -359,10 +359,9 @@ class ShopifyWebhookLog(models.Model):
         line_total = price_unit * quantity
         discount_percentage = (total_discount / line_total) * 100 if line_total > 0 else 0.0
 
-        line_name = item_data.get('title') or product.name
-        variant_title = item_data.get('variant_title')
+        line_name = product.name  # usar el nombre de la variante en Odoo
         if variant_title:
-            line_name = f"{line_name} - {variant_title}"
+            line_name += f" ({variant_title})"
 
         vals = {
             'order_id': order.id,
