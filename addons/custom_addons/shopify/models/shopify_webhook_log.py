@@ -124,7 +124,7 @@ class ShopifyWebhookLog(models.Model):
         """Procesa datos del cliente, priorizando shipping_address para draft orders"""
         if not customer_data or not customer_data.get('first_name'):
             # Obtener datos de shipping_address
-            shipping_address = order_data.get('shipping_address', {})
+            shipping_address = order_data.get('shipping_address') or order_data.get('billing_address', {})
             if shipping_address:
                 first_name = shipping_address.get('first_name', '').strip()
                 last_name = shipping_address.get('last_name', '').strip()
@@ -168,7 +168,7 @@ class ShopifyWebhookLog(models.Model):
             location_data.update(self.get_location_from_note_attributes(order_data['note_attributes']))
             _logger.info(f"Datos obtenidos de note_attributes: {location_data}")
 
-        shipping_address = order_data.get('shipping_address', {})
+        shipping_address = order_data.get('shipping_address') or order_data.get('billing_address', {})
         if shipping_address:
             if not location_data['department']:
                 location_data['department'] = shipping_address.get('province_code')
