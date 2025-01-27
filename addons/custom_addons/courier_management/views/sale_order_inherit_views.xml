@@ -12,11 +12,11 @@
                        context="{
                            'res_partner_search_mode': 'customer',
                            'show_address': 1,
-                           'show_vat': True,
-                           'address_inline': True,
-                           'address_pattern': '%(street)s - %(street2)s\n%(district)s - %(city)s - %(state_name)s\n%(country_name)s ‒ %(zip)s'
+                           'show_vat': True
                        }"
-                       options="{'always_reload': True}"/>
+                       options="{
+                           'always_reload': True
+                       }"/>
                 <field name="shopify_store_id" string="Shopify Store"/>
                 <field name="partner_phone" string="Teléfono"/>
                 <field name="commitment_date" string="Delivery Date"/>
