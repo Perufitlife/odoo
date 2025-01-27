@@ -5,20 +5,11 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-            <field name="partner_id" position="replace">
-                <field name="partner_id" 
-                       widget="contact_address" 
-                       string="Customer" 
-                       context="{
-                           'res_partner_search_mode': 'customer',
-                           'show_address': 1,
-                           'show_vat': True
-                       }"
-                       options="{
-                           'always_reload': True
-                       }"/>
-                <field name="shopify_store_id" string="Shopify Store"/>
+            <!-- Solo modificamos el partner_id -->
+            <field name="partner_id" position="after">
+                <field name="partner_district" string="Distrito"/>
                 <field name="partner_phone" string="Teléfono"/>
+                <field name="shopify_store_id" string="Shopify Store"/>
                 <field name="commitment_date" string="Delivery Date"/>
                 <field name="x_initial_status" string="Estado Inicial"/>
                 <field name="partner_shipping_id"
