@@ -12,26 +12,23 @@ class SaleOrder(models.Model):
         help='La tienda de Shopify de la cual proviene este pedido.'
     )
 
-    # Campo para controlar el estado inicial personalizado
-    x_initial_status = fields.Selection(
-        [
-            ('order_completed', 'Orden Completada'),
-            ('abandoned_cart', 'Carrito Abandonado'),
-            ('whatsapp', 'Whatsapp'),
-            ('confirmed', 'Confirmado'),
-            ('esperando_adelanto', 'Esperando Adelanto'),
-            ('pendiente', 'Pendiente'),
-            ('in_transit', 'En Tránsito'),
-            ('delivered', 'Entregado'),
-            ('cancelled', 'Cancelado'),
-            ('despachado', 'Despachado'),
-            ('reprogramado', 'Reprogramado'),  # Nuevo estado
-            ('no_entregado', 'No Entregado'),            
-        ],
-        string='Estado Inicial',
-        help='Estado inicial personalizado según el origen de la orden.',
-        default='whatsapp'  # Agregar default aquí
-    )
+    # Campo de estado inicial para tu flujo personalizado
+    x_initial_status = fields.Selection([
+        ('draft', 'Borrador'),
+        ('whatsapp', 'Whatsapp'),
+        ('abandoned_cart', 'Carrito Abandonado'),
+        ('order_completed', 'Orden Completa'),
+        ('scheduled', 'Programado'),  # Se mantiene aquí por si necesitas en otro punto
+        ('pending', 'Pendiente'),  # Se mantiene aquí por si necesitas en otro punto
+        ('confirmed', 'Confirmado'),
+        ('esperando_adelanto', 'Esperando Adelanto'),
+        ('despachado', 'Despachado'),
+        ('in_transit', 'En Tránsito'),
+        ('delivered', 'Entregado'),
+        ('failed', 'No Entregado'),
+        ('cancelled', 'Cancelado'),
+        ('reprogramado', 'Reprogramado'),
+    ], string='Estado Inicial', default='whatsapp', tracking=True)
 
     @api.model
     def create(self, vals):
