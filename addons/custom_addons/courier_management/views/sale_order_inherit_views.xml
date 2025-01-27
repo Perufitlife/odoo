@@ -5,7 +5,7 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-            <!-- Reemplazamos el partner_id con información adicional -->
+            <!-- Partner info -->
             <field name="partner_id" position="replace">
                 <field name="partner_id" 
                        widget="contact_address" 
@@ -14,10 +14,7 @@
                        options="{'always_reload': True}"/>
                 <field name="partner_phone" string="Teléfono" readonly="1"/>
                 <field name="partner_district" string="Distrito" readonly="1"/>
-            </field>
-
-            <!-- Mantenemos los otros campos en su posición -->
-            <field name="commitment_date" position="after">
+                <field name="commitment_date" string="Delivery Date"/>
                 <field name="x_initial_status" string="Estado Inicial"/>
                 <field name="partner_shipping_id"
                        context="{'default_type': 'delivery'}"
