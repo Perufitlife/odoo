@@ -26,6 +26,22 @@ class SaleOrder(models.Model):
         string='Transportista'
     )
 
+    partner_phone = fields.Char(
+        string='Teléfono del Cliente',
+        related='partner_id.phone',
+        readonly=True,
+        store=True
+    )
+
+    partner_district = fields.Many2one(
+        'l10n_pe.res.city.district',
+        string='Distrito del Cliente',
+        related='partner_id.l10n_pe_district',
+        readonly=True,
+        store=True
+    )
+
+
     # Campo de estado inicial para tu flujo personalizado
     x_initial_status = fields.Selection([
         ('draft', 'Borrador'),
