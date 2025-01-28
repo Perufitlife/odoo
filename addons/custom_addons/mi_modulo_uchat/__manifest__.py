@@ -17,6 +17,7 @@
         'views/res_config_settings_view.xml',
         'views/sale_order_chat_button.xml',
         'views/sale_order_status_buttons.xml',
+        'views/sale_order_list_view.xml',
     ],
     'installable': True,
     'application': True,

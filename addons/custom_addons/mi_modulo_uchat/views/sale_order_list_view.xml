@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_order_tree_with_chat" model="ir.ui.view">
+        <field name="name">sale.order.tree.chat.inherit</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <!-- Añadir columna de teléfono después del cliente -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="partner_id" string="Teléfono" widget="phone"/>
+            </xpath>
+            
+            <!-- Añadir botón de chat -->
+            <xpath expr="//tree" position="attributes">
+                <attribute name="decoration-muted">state=='cancel'</attribute>
+            </xpath>
+            
+            <!-- Añadir columna de chat después de Activities -->
+            <xpath expr="//field[@name='activity_ids']" position="after">
+                <button name="action_open_uchat" 
+                        type="object" 
+                        string="Chat" 
+                        class="btn btn-link" 
+                        icon="fa-whatsapp"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
