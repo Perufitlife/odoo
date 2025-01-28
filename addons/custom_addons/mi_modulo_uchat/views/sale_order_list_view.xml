@@ -7,12 +7,7 @@
         <field name="arch" type="xml">
             <!-- Añadir el campo de teléfono después del cliente -->
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="partner_id" string="Teléfono" invisible="1"/>
-                <field name="partner_id" string="Teléfono" attrs="{'invisible': [('partner_id', '=', False)]}">
-                    <div>
-                        <field name="partner_id" widget="phone"/>
-                    </div>
-                </field>
+                <field name="phone_display" optional="show"/>
             </xpath>
             
             <!-- Añadir el botón de chat -->
