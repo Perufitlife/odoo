@@ -6,13 +6,12 @@
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
         <field name="arch" type="xml">
             <!-- Añadir el campo de teléfono después del cliente -->
-            <field name="partner_id" position="after">
-                <field name="partner_id" invisible="1"/>
-                <field name="partner_id" string="Teléfono" widget="phone" options="{'enable_sms': false}"/>
-            </field>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="partner_phone" widget="phone" string="Teléfono"/>
+            </xpath>
             
             <!-- Añadir el botón de chat -->
-            <field name="activity_ids" position="after">
+            <xpath expr="//field[@name='activity_ids']" position="after">
                 <button name="action_open_uchat" 
                         type="object" 
                         icon="fa-whatsapp" 
