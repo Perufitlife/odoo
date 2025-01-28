@@ -5,9 +5,10 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
         <field name="arch" type="xml">
-            <!-- Añadir columna de teléfono después del cliente -->
+            <!-- Añadir columnas de teléfono después del cliente -->
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="partner_id" string="Teléfono" widget="phone"/>
+                <field name="partner_mobile" widget="phone" optional="show"/>
+                <field name="partner_phone" widget="phone" optional="show"/>
             </xpath>
             
             <!-- Añadir botón de chat -->
@@ -19,9 +20,9 @@
             <xpath expr="//field[@name='activity_ids']" position="after">
                 <button name="action_open_uchat" 
                         type="object" 
-                        string="Chat" 
-                        class="btn btn-link" 
-                        icon="fa-whatsapp"/>
+                        title="Abrir Chat"
+                        icon="fa-whatsapp"
+                        class="text-success"/>
             </xpath>
         </field>
     </record>
