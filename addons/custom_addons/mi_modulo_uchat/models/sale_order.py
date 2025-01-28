@@ -10,12 +10,19 @@ class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
 
-    partner_id = fields.Many2one(
-        'res.partner', 
-        string='Customer',
-        related='partner_id',
+    phone_display = fields.Char(
+        string='Teléfono',
+        compute='_compute_phone_display',
         store=True
     )
+
+    @api.depends('partner_id')
+    def _compute_phone_display(self):
+        for record in self:
+            if record.partner_id:
+                record.phone_display = record.partner_id.mobile or record.partner_id.phone
+            else:
+                record.phone_display = False
 
     def action_open_uchat(self):
         """
