@@ -9,20 +9,18 @@ _logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-
-    phone_display = fields.Char(
+    partner_phone = fields.Char(
         string='Teléfono',
-        compute='_compute_phone_display',
-        store=True
+        related='partner_id.phone',
+        store=True,
+        readonly=True
     )
-
-    @api.depends('partner_id')
-    def _compute_phone_display(self):
-        for record in self:
-            if record.partner_id:
-                record.phone_display = record.partner_id.mobile or record.partner_id.phone
-            else:
-                record.phone_display = False
+    partner_mobile = fields.Char(
+        string='Móvil',
+        related='partner_id.mobile',
+        store=True,
+        readonly=True
+    )
 
     def action_open_uchat(self):
         """
