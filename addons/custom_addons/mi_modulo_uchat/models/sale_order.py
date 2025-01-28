@@ -9,17 +9,16 @@ _logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+
+    def _get_partner_phone(self):
+        for record in self:
+            record.partner_phone = record.partner_id.phone or record.partner_id.mobile
+
+
     partner_phone = fields.Char(
         string='Teléfono',
-        related='partner_id.phone',
-        store=True,
-        readonly=True
-    )
-    partner_mobile = fields.Char(
-        string='Móvil',
-        related='partner_id.mobile',
-        store=True,
-        readonly=True
+        compute='_get_partner_phone',
+        store=True
     )
 
     def action_open_uchat(self):
