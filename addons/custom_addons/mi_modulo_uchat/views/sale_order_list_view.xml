@@ -17,7 +17,7 @@
                         icon="fa-whatsapp" 
                         class="text-success"
                         title="Abrir Chat"/>
-            </field>
+            </xpath>
         </field>
     </record>
 </odoo>
