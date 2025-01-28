@@ -7,13 +7,7 @@
         <field name="arch" type="xml">
             <!-- Añadir columna de teléfono después del cliente -->
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="partner_id" invisible="1"/>
-                <field name="partner_id" string="Teléfono">
-                    <div>
-                        <field name="partner_id" widget="many2one"/>
-                        <field name="partner_id" widget="phone" options="{'enable_sms': false}" attrs="{'invisible': [('partner_id', '=', False)]}"/>
-                    </div>
-                </field>
+                <field name="partner_mobile" widget="phone" string="Teléfono"/>
             </xpath>
             
             <!-- Añadir botón de chat -->

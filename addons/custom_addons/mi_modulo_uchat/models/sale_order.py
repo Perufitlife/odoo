@@ -9,6 +9,19 @@ _logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    partner_phone = fields.Char(
+        string='Teléfono',
+        related='partner_id.phone',
+        store=True,
+        readonly=True
+    )
+    partner_mobile = fields.Char(
+        string='Móvil',
+        related='partner_id.mobile',
+        store=True,
+        readonly=True
+    )
+
     def action_open_uchat(self):
         """
         Abre la ventana de conversación en UChat para el cliente relacionado a esta orden.
