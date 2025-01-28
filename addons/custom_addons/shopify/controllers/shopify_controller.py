@@ -11,11 +11,10 @@ from base64 import b64encode
 _logger = logging.getLogger(__name__)
 
 class ShopifyController(http.Controller):
-    @http.route('/shopify/webhook/orders/create', 
-                type='http',           
-                auth='none', 
-                methods=['POST'],
-                csrf=False)
+    @http.route([
+        '/shopify/webhook/orders/create',
+        '/shopify/webhook/draft_orders/create'
+    ], type='http', auth='none', methods=['POST'], csrf=False)
     def webhook(self, **kwargs):
         try:
             _logger.info("=== Shopify Webhook Called ===")
@@ -61,41 +60,69 @@ class ShopifyController(http.Controller):
             data['store_id'] = store_id
             webhook_vals = {
                 'name': f'Webhook {shopify_topic}',
-                'payload': json.dumps(data),
+                'payload': json.dumps(data, indent=2),  # Mejorado para mejor legibilidad
                 'event_type': shopify_topic,
-                'state': 'pending',  
+                'state': 'pending',
                 'shopify_order_id': str(data.get('id', '')),
             }
+
+            # Añadir información del cliente si está disponible
+            customer_name = None
+            shipping_address = data.get('shipping_address', {})
+            if shipping_address:
+                first_name = shipping_address.get('first_name', '').strip()
+                last_name = shipping_address.get('last_name', '').strip()
+                if first_name or last_name:
+                    customer_name = f"{first_name} {last_name}".strip()
+
+            if not customer_name and data.get('customer'):
+                customer = data['customer']
+                first_name = customer.get('first_name', '').strip()
+                last_name = customer.get('last_name', '').strip()
+                if first_name or last_name:
+                    customer_name = f"{first_name} {last_name}".strip()
+
+            if customer_name:
+                webhook_vals['customer_name'] = customer_name
 
             # Crear registro de log
             ShopifyWebhookLog = env['shopify.webhook.log'].sudo()
             log = ShopifyWebhookLog.with_user(uid).create(webhook_vals)
 
+            _logger.info(f"Webhook log creado con ID: {log.id}")
+
             # === PROCESAR AUTOMÁTICAMENTE EL WEBHOOK ===
             try:
                 # Llamamos el método que procesa el webhook
                 log.action_process_webhook()
+                _logger.info(f"Webhook {log.id} procesado exitosamente")
+                
                 return Response(
                     json.dumps({
                         "status": "success",
                         "log_id": log.id,
-                        "message": "Webhook recibido y procesado automáticamente."
+                        "message": "Webhook recibido y procesado automáticamente.",
+                        "customer_name": customer_name
                     }),
                     content_type='application/json',
                     status=200
                 )
             except Exception as process_error:
                 error_message = str(process_error)
-                _logger.error("Error procesando webhook automáticamente: %s", error_message)
+                _logger.error("Error procesando webhook automáticamente: %s", error_message, exc_info=True)
+                
                 # Marcamos el log como fallido
                 log.write({
                     'state': 'failed',
                     'error_message': error_message
                 })
+                
                 return Response(
                     json.dumps({
                         "status": "error",
-                        "message": error_message
+                        "log_id": log.id,
+                        "message": error_message,
+                        "customer_name": customer_name
                     }),
                     content_type='application/json',
                     status=500
@@ -103,7 +130,7 @@ class ShopifyController(http.Controller):
 
         except Exception as e:
             error_message = str(e)
-            _logger.error("Error en el webhook: %s", error_message)
+            _logger.error("Error en el webhook: %s", error_message, exc_info=True)
             return Response(
                 json.dumps({
                     "status": "error",
@@ -112,3 +139,15 @@ class ShopifyController(http.Controller):
                 content_type='application/json',
                 status=500
             )
+
+    @http.route('/shopify/webhook/test', type='http', auth='none', methods=['GET'], csrf=False)
+    def test_webhook(self, **kwargs):
+        """Endpoint para probar la conectividad del webhook"""
+        return Response(
+            json.dumps({
+                "status": "success",
+                "message": "Webhook endpoint está funcionando correctamente"
+            }),
+            content_type='application/json',
+            status=200
+        )

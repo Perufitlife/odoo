@@ -64,12 +64,33 @@ class ShopifyWebhookLog(models.Model):
         if payload_str:
             try:
                 data = json.loads(payload_str)
-                customer = data.get('customer', {})
-                first_name = customer.get('first_name') or ''
-                last_name = customer.get('last_name') or ''
-                full_name = (first_name + ' ' + last_name).strip()
-                if full_name:
-                    vals['customer_name'] = full_name
+                # Intentar obtener el nombre del cliente de diferentes fuentes
+                customer_name = ""
+                
+                # 1. Intentar desde shipping_address
+                shipping_address = data.get('shipping_address', {})
+                if shipping_address:
+                    first_name = shipping_address.get('first_name', '').strip()
+                    last_name = shipping_address.get('last_name', '').strip()
+                    customer_name = f"{first_name} {last_name}".strip()
+                
+                # 2. Si no hay nombre en shipping_address, intentar desde customer
+                if not customer_name:
+                    customer = data.get('customer', {})
+                    first_name = customer.get('first_name', '').strip()
+                    last_name = customer.get('last_name', '').strip()
+                    customer_name = (first_name + ' ' + last_name).strip()
+                
+                # 3. Si aún no hay nombre, intentar desde note_attributes
+                if not customer_name:
+                    note_attributes = data.get('note_attributes', [])
+                    for attr in note_attributes:
+                        if attr.get('name', '').lower() == 'nombre y apellido':
+                            customer_name = attr.get('value', '').strip()
+                            break
+                
+                if customer_name:
+                    vals['customer_name'] = customer_name
             except Exception as e:
                 _logger.warning("No se pudo parsear el payload para obtener el nombre del cliente: %s", e)
 
@@ -87,7 +108,7 @@ class ShopifyWebhookLog(models.Model):
 
     def get_location_from_note_attributes(self, note_attributes):
         """
-        Mantener el método existente ya que funciona bien con las ubicaciones
+        Obtiene la información de ubicación desde note_attributes
         """
         location_data = {
             'department': '',
@@ -122,40 +143,26 @@ class ShopifyWebhookLog(models.Model):
 
     def process_customer(self, customer_data, order_data):
         """Procesa datos del cliente, priorizando shipping_address para draft orders"""
-        if not customer_data or not customer_data.get('first_name'):
-            # Obtener datos de shipping_address
-            shipping_address = order_data.get('shipping_address') or order_data.get('billing_address', {})
-            if shipping_address:
-                first_name = shipping_address.get('first_name', '').strip()
-                last_name = shipping_address.get('last_name', '').strip()
-                phone = shipping_address.get('phone', '')
-                timestamp = fields.Datetime.now().strftime('%Y%m%d%H%M%S')
-                full_name = f"{first_name} {last_name}".strip() or f"Cliente Anónimo {timestamp}"
-            else:
-                timestamp = fields.Datetime.now().strftime('%Y%m%d%H%M%S')
-                full_name = f"Cliente Anónimo {timestamp}"
-                phone = ''
-
-            partner_vals = {
-                'name': full_name,
-                'email': False,
-                'phone': phone,
-                'country_id': self.env['res.country'].sudo().search([('code', '=', 'PE')], limit=1).id
-            }
-            partner = self.env['res.partner'].sudo().create(partner_vals)
-            _logger.info(f"Cliente creado desde shipping_address con ID: {partner.id}")
-            return partner
-
-
-        # Extraer datos básicos del cliente
-        email = customer_data.get('email', '')
-        phone = customer_data.get('phone') or customer_data.get('default_address', {}).get('phone', '')
-        first_name = (customer_data.get('first_name') or '').strip()
-        last_name = (customer_data.get('last_name') or '').strip()
+        # Inicializar variables básicas
+        shipping_address = order_data.get('shipping_address') or order_data.get('billing_address', {})
         timestamp = fields.Datetime.now().strftime('%Y%m%d%H%M%S')
+
+        # Obtener información del cliente (ya sea de customer_data o shipping_address)
+        if customer_data and customer_data.get('first_name'):
+            first_name = (customer_data.get('first_name') or '').strip()
+            last_name = (customer_data.get('last_name') or '').strip()
+            email = customer_data.get('email', '')
+            phone = customer_data.get('phone') or customer_data.get('default_address', {}).get('phone', '')
+        else:
+            first_name = shipping_address.get('first_name', '').strip()
+            last_name = shipping_address.get('last_name', '').strip()
+            email = order_data.get('email', '')  # En draft orders, el email está en la raíz
+            phone = shipping_address.get('phone', '')
+
+        # Construir nombre completo
         full_name = f"{first_name} {last_name}".strip() or f"Cliente Anónimo {timestamp}"
 
-        # Procesar ubicación
+        # === Procesamiento de la ubicación ===
         location_data = {
             'department': '',
             'province': '',
@@ -164,11 +171,12 @@ class ShopifyWebhookLog(models.Model):
             'reference': '',
         }
 
+        # Procesar note_attributes primero
         if order_data.get('note_attributes'):
             location_data.update(self.get_location_from_note_attributes(order_data['note_attributes']))
             _logger.info(f"Datos obtenidos de note_attributes: {location_data}")
 
-        shipping_address = order_data.get('shipping_address') or order_data.get('billing_address', {})
+        # Complementar con datos de shipping_address
         if shipping_address:
             if not location_data['department']:
                 location_data['department'] = shipping_address.get('province_code')
@@ -291,7 +299,7 @@ class ShopifyWebhookLog(models.Model):
             _logger.info(f"Cliente creado con ID: {partner.id}")
 
         return partner
-    
+
     def find_or_create_product(self, item_data):
         """
         Busca o crea un producto basado en los datos de Shopify
@@ -333,7 +341,7 @@ class ShopifyWebhookLog(models.Model):
             'uom_po_id': self.env.ref('uom.product_uom_unit').id,
             'invoice_policy': 'order',
             'description_sale': variant_title if variant_title else '',
-            'categ_id': self.env.ref('product.product_category_all').id,  # Añadido categoría por defecto
+            'categ_id': self.env.ref('product.product_category_all').id,
         }
 
         try:
@@ -359,12 +367,8 @@ class ShopifyWebhookLog(models.Model):
         line_total = price_unit * quantity
         discount_percentage = (total_discount / line_total) * 100 if line_total > 0 else 0.0
 
-        # Recibir los campos del payload
-        title = item_data.get('title') or product.name
-        variant_title = item_data.get('variant_title')  # <--- IMPORTANTE
-
-
-        line_name = product.name  # usar el nombre de la variante en Odoo
+        line_name = product.name
+        variant_title = item_data.get('variant_title')
         if variant_title:
             line_name += f" ({variant_title})"
 
@@ -380,7 +384,7 @@ class ShopifyWebhookLog(models.Model):
         }
 
         return self.env['sale.order.line'].sudo().create(vals)
-        
+
     def process_order(self, order_data, store):
         """
         Procesa una orden completa de Shopify
@@ -393,45 +397,38 @@ class ShopifyWebhookLog(models.Model):
         if not line_items:
             raise ValidationError("La orden no contiene líneas de productos")
 
-        # Procesar cliente
-        customer_data = order_data.get('customer')
-        if not customer_data:
-            raise ValidationError("No se encontraron datos del cliente")
-        
-        partner = self.process_customer(customer_data, order_data)
+        # Procesar cliente (ya no validamos si existe customer_data)
+        partner = self.process_customer(order_data.get('customer'), order_data)
 
-        # Crear orden de venta
+        # Obtener nombre/ID de orden
         order_name = order_data.get('name', '')
         shopify_order_id = str(order_data.get('id', ''))
 
-        # === Asignamos el estado inicial según event_type ===
+        # Determinar estado inicial según el tipo de evento
         if self.event_type == 'orders/create':
             initial_status = 'order_completed'
         elif self.event_type == 'draft_orders/create':
             initial_status = 'abandoned_cart'
         else:
             initial_status = 'whatsapp'
-        # ===============================================
 
-        # Armamos el diccionario para crear la orden de venta
+        # Crear orden de venta
         order_vals = {
             'partner_id': partner.id,
             'client_order_ref': f"Shopify-{order_name}",
             'date_order': fields.Datetime.now(),
             'company_id': self.env.company.id,
             'shopify_store_id': store.id,
-            'x_initial_status': initial_status,  # <--- NUEVO CAMPO
-            # 'state': 'draft'  # <- Esto es opcional, Odoo ya lo pone como 'draft' por defecto.
+            'x_initial_status': initial_status,
         }
 
-        # Crear orden
         order = self.env['sale.order'].sudo().create(order_vals)
         _logger.info(f"Orden de venta creada: {order.name}")
 
-        # Obtener el impuesto de IGV
+        # Obtener impuesto IGV
         igv_tax = self._get_or_create_igv_tax()
 
-        # Procesar líneas
+        # Procesar líneas de orden
         shopify_total = float(order_data.get('total_price', 0))
         for item in line_items:
             try:
@@ -440,7 +437,7 @@ class ShopifyWebhookLog(models.Model):
                 _logger.error(f"Error procesando línea de orden: {str(e)}")
                 raise ValidationError(f"Error procesando línea de producto {item.get('title')}: {str(e)}")
 
-        # Validar total después de procesar todas las líneas
+        # Validar totales
         if abs(order.amount_total - shopify_total) > 0.01:
             message = (
                 f"⚠️ Diferencia en totales detectada:\n"
@@ -451,7 +448,6 @@ class ShopifyWebhookLog(models.Model):
 
         return order
 
-
     def _get_or_create_igv_tax(self):
         """
         Obtiene o crea el impuesto IGV
@@ -459,7 +455,7 @@ class ShopifyWebhookLog(models.Model):
         igv_tax = self.env['account.tax'].sudo().search([
             ('type_tax_use', '=', 'sale'),
             ('amount', '=', 18),
-            ('price_include', '=', False),  # Cambiado a False porque ahora manejamos precios sin IGV
+            ('price_include', '=', False),
             ('company_id', '=', self.env.company.id)
         ], limit=1)
 
@@ -469,7 +465,7 @@ class ShopifyWebhookLog(models.Model):
                 'type_tax_use': 'sale',
                 'amount_type': 'percent',
                 'amount': 18,
-                'price_include': False,  # Precios sin IGV
+                'price_include': False,
                 'include_base_amount': False,
                 'company_id': self.env.company.id,
                 'l10n_pe_edi_tax_code': '1000',
