@@ -10,14 +10,10 @@ class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
 
-    @api.depends('partner_id', 'partner_id.phone', 'partner_id.mobile')
-    def _get_partner_phone(self):
-        for record in self:
-            record.partner_phone = record.partner_id.phone or record.partner_id.mobile
-
-    partner_phone = fields.Char(
-        string='Teléfono',
-        compute='_get_partner_phone',
+    partner_id = fields.Many2one(
+        'res.partner', 
+        string='Customer',
+        related='partner_id',
         store=True
     )
 
