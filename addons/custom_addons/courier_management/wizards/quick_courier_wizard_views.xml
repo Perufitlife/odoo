@@ -1,20 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Vista de formulario para el wizard -->
     <record id="view_quick_courier_wizard_form" model="ir.ui.view">
         <field name="name">quick.courier.wizard.form</field>
         <field name="model">quick.courier.wizard</field>
         <field name="arch" type="xml">
-            <form string="Configuración Rápida de Courier">
+            <form string="Configurar Nuevo Courier">
                 <sheet>
                     <group>
-                        <field name="name" placeholder="Nombre del nuevo courier"/>
-                        <field name="delivery_type"/>
-                        <field name="district_id" 
+                        <field name="carrier_selection" widget="radio"/>
+                    </group>
+                    
+                    <!-- Campos para courier existente -->
+                    <group attrs="{'invisible': [('carrier_selection', '!=', 'existing')]}">
+                        <field name="existing_carrier_id" 
                                options="{'no_create': True}"
-                               domain="[('city_id', '!=', False)]"/>
-                        <field name="price"/>
-                        <field name="sale_order_id" invisible="1"/>
+                               attrs="{'required': [('carrier_selection', '=', 'existing')]}"/>
+                    </group>
+                    
+                    <!-- Campos para nuevo courier -->
+                    <group attrs="{'invisible': [('carrier_selection', '!=', 'new')]}">
+                        <field name="name" 
+                               attrs="{'required': [('carrier_selection', '=', 'new')]}"
+                               placeholder="Nombre del nuevo courier"/>
+                        <field name="delivery_type"/>
+                    </group>
+                    
+                    <!-- Campos de ubicación y precio -->
+                    <group>
+                        <group>
+                            <field name="country_id" readonly="1"/>
+                            <field name="state_id" 
+                                   options="{'no_create': True}"
+                                   readonly="1"/>
+                            <field name="city_id" 
+                                   options="{'no_create': True}"
+                                   readonly="1"/>
+                            <field name="district_id" 
+                                   options="{'no_create': True}"
+                                   readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="price"/>
+                            <field name="sale_order_id" invisible="1"/>
+                        </group>
                     </group>
                 </sheet>
                 <footer>
@@ -28,13 +56,5 @@
                 </footer>
             </form>
         </field>
-    </record>
-
-    <!-- Acción del wizard -->
-    <record id="action_quick_courier_wizard" model="ir.actions.act_window">
-        <field name="name">Configurar Nuevo Courier</field>
-        <field name="res_model">quick.courier.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">new</field>
     </record>
 </odoo>
