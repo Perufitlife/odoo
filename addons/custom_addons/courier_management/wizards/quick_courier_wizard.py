@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 class QuickCourierWizard(models.TransientModel):
     _name = 'quick.courier.wizard'
     _description = 'Configuración Rápida de Courier'
+    _description = 'Configuración Rápida de Courier'
 
     name = fields.Char(
         string='Nombre del Courier',

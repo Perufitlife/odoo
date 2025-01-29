@@ -15,4 +15,4 @@ access_no_entregado_wizard,no.entregado.wizard,model_no_entregado_wizard,base.gr
 access_no_delivery_reason_user,no.delivery.reason.user,model_no_delivery_reason,base.group_user,1,1,1,1
 access_reprogramar_wizard,reprogramar.wizard,model_reprogramar_wizard,base.group_user,1,1,1,1
 access_courier_shipment_product_summary,access_courier_shipment_product_summary,model_courier_shipment_product_summary,base.group_user,1,1,1,1
-
+access_quick_courier_wizard,quick.courier.wizard.user,model_quick_courier_wizard,base.group_user,1,1,1,1
