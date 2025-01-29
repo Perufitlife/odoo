@@ -144,7 +144,7 @@ class SaleOrder(models.Model):
     def action_confirm(self):
         """
         Valida que se asigne un transportista antes de confirmar la orden.
-        Crea un registro en courier.shipment para que el transportista pueda verlo.
+        Si no hay transportista disponible, ofrece crear uno nuevo.
         """
         for order in self:
             if not order.commitment_date:
@@ -169,26 +169,18 @@ class SaleOrder(models.Model):
                     cheapest_rule = pricing_rules.sorted(key=lambda rule: rule.price, reverse=False)[:1]
                     if cheapest_rule:
                         order.carrier_id = cheapest_rule.carrier_id
-                        _logger.info(
-                            f"Transportista asignado automáticamente: {cheapest_rule.carrier_id.name} para la orden {order.name}"
-                        )
-                    else:
-                        raise UserError(
-                            f"No se encontró un transportista para el distrito {district.name}. "
-                            "Por favor, configure una regla de precios para este distrito."
-                        )
                 else:
-                    raise UserError(
-                        f"No se encontró una regla de precios para el distrito {district.name}. "
-                        "Por favor, configure una regla de precios antes de confirmar la orden."
-                    )
+                    # Si no hay reglas de precio, mostrar el wizard de configuración rápida
+                    return {
+                        'name': 'Configurar Nuevo Courier',
+                        'type': 'ir.actions.act_window',
+                        'res_model': 'quick.courier.wizard',
+                        'view_mode': 'form',
+                        'target': 'new',
+                        'context': {'default_district_id': district.id}
+                    }
 
-            if not order.carrier_id:
-                raise UserError(
-                    "No se pudo asignar un transportista a la orden. Por favor, configure las reglas de precios o asigne un transportista manualmente."
-                )
-
-        # 1) Lógica nativa de confirmación (pasa a state='sale')
+        # Continuar con el proceso normal de confirmación
         res = super(SaleOrder, self).action_confirm()
 
         # 2) Si la orden pasó a 'sale', marcamos x_initial_status='confirmed'
