@@ -10,6 +10,7 @@
                 <field name="partner_phone" widget="phone" optional="show"/>
                 <field name="products_summary" optional="show" string="Productos"/>
                 <field name="partner_city" string="Ciudad" optional="show"/>
+                <field name="carrier_id" string="Transportista" optional="show"/>                
                 <field name="simplified_message" optional="show" string="Último mensaje"/>
             </field>
             
