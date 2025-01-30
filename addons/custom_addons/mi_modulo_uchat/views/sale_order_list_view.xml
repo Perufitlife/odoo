@@ -5,25 +5,28 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree"/>
         <field name="arch" type="xml">
-            <!-- Campos existentes -->
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="partner_mobile" widget="phone" optional="show"/>
                 <field name="partner_phone" widget="phone" optional="show"/>
-                <!-- Nuevos campos después del teléfono -->
-                <field name="order_line" string="Productos" optional="show"/>
-                <field name="amount_untaxed" sum="Total sin impuestos" widget="monetary" optional="show"/>
-                <field name="amount_total" sum="Total" widget="monetary" optional="show"/>
+                <field 
+                    name="products_summary" 
+                    optional="show" 
+                    string="Productos"
+                    title="products_detail"/>
                 <field name="partner_city" string="Ciudad" optional="show"/>
                 <field name="commitment_date" optional="show" string="Fecha de Entrega"/>
-                <field name="last_message" optional="show" string="Último mensaje"/>
+                <field 
+                    name="simplified_message" 
+                    optional="show" 
+                    string="Último mensaje"
+                    title="message_detail"/>
+                <field name="amount_total" sum="Total" widget="monetary" optional="show"/>
             </xpath>
             
-            <!-- Decoración existente -->
             <xpath expr="//tree" position="attributes">
                 <attribute name="decoration-muted">state=='cancel'</attribute>
             </xpath>
             
-            <!-- Botón de chat existente -->
             <xpath expr="//field[@name='activity_ids']" position="after">
                 <button name="action_open_uchat" 
                         type="object" 

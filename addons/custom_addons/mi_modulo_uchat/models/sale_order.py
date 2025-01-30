@@ -28,17 +28,44 @@ class SaleOrder(models.Model):
         store=True
     )
 
-    last_message = fields.Text(
-        string='Último mensaje',
-        compute='_compute_last_message',
+    products_summary = fields.Char(
+        string='Productos',
+        compute='_compute_products_summary',
         store=True
     )
 
+    simplified_message = fields.Char(
+        string='Último mensaje',
+        compute='_compute_simplified_message',
+        store=True
+    )
+
+    @api.depends('order_line')
+    def _compute_products_summary(self):
+        for record in self:
+            products = []
+            details = []
+            for line in record.order_line:
+                if line.product_id and line.product_uom_qty:
+                    products.append(f"{line.product_id.name}")
+                    details.append(f"{line.product_id.name} (x{int(line.product_uom_qty)})")
+            
+            record.products_summary = ', '.join(products) if products else '/'
+            record.products_detail = '\n'.join(details) if details else '/'
+
     @api.depends('message_ids')
-    def _compute_last_message(self):
+    def _compute_simplified_message(self):
         for record in self:
             last_message = record.message_ids.sorted('date', reverse=True)[:1]
-            record.last_message = last_message.body if last_message else False
+            if last_message and last_message.body:
+                # Limpiamos el mensaje de tags HTML y lo simplificamos
+                clean_message = re.sub(r'<[^>]+>', '', last_message.body)
+                clean_message = clean_message.replace('\n', ' ').strip()
+                record.simplified_message = clean_message
+                record.message_detail = last_message.body
+            else:
+                record.simplified_message = ''
+                record.message_detail = ''
 
 
     def action_open_uchat(self):
