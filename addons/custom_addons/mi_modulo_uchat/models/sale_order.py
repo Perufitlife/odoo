@@ -3,6 +3,7 @@ import requests
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import logging
+import re
 
 _logger = logging.getLogger(__name__)
 
@@ -28,6 +29,12 @@ class SaleOrder(models.Model):
         store=True
     )
 
+    products_detail = fields.Text(  # Campo agregado
+        string='Detalle de Productos',
+        compute='_compute_products_summary',
+        store=True
+    )
+
     products_summary = fields.Char(
         string='Productos',
         compute='_compute_products_summary',
@@ -36,6 +43,12 @@ class SaleOrder(models.Model):
 
     simplified_message = fields.Char(
         string='Último mensaje',
+        compute='_compute_simplified_message',
+        store=True
+    )
+
+    message_detail = fields.Text(  # Campo agregado
+        string='Detalle del mensaje',
         compute='_compute_simplified_message',
         store=True
     )
