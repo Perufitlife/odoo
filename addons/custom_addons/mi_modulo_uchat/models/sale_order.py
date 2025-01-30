@@ -56,20 +56,29 @@ class SaleOrder(models.Model):
     @api.depends('order_line')
     def _compute_products_summary(self):
         for record in self:
-            products = []
+            summary_items = []
             details = []
             for line in record.order_line:
                 if line.product_id and line.product_uom_qty:
-                    products.append(f"{line.product_id.name}")
-                    details.append(f"{line.product_id.name} (x{int(line.product_uom_qty)})")
+                    # Formato más legible: "2x Producto A"
+                    summary_items.append(f"{int(line.product_uom_qty)}x {line.product_id.name}")
+                    details.append(f"{line.product_id.name} (Cantidad: {int(line.product_uom_qty)})")
             
-            record.products_summary = ', '.join(products) if products else '/'
+            record.products_summary = ' | '.join(summary_items) if summary_items else '/'
             record.products_detail = '\n'.join(details) if details else '/'
 
     @api.depends('message_ids')
     def _compute_simplified_message(self):
         for record in self:
-            last_message = record.message_ids.sorted('date', reverse=True)[:1]
+            # Filtrar solo mensajes manuales (no automáticos)
+            # Los mensajes automáticos generalmente tienen tracking_value_ids o tienen subtype_id específicos
+            manual_messages = record.message_ids.filtered(lambda m: 
+                not m.tracking_value_ids and 
+                m.message_type in ['comment'] and
+                not m.subtype_id.internal
+            )
+            
+            last_message = manual_messages.sorted('date', reverse=True)[:1]
             if last_message and last_message.body:
                 # Limpiamos el mensaje de tags HTML y lo simplificamos
                 clean_message = re.sub(r'<[^>]+>', '', last_message.body)
