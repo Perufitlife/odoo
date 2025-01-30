@@ -70,26 +70,33 @@ class SaleOrder(models.Model):
     @api.depends('message_ids')
     def _compute_simplified_message(self):
         for record in self:
-            # Filtrar mensajes excluyendo los automáticos específicos
-            filtered_messages = record.message_ids.filtered(lambda m: 
-                not m.subtype_id.name in ['Shopify Notification', 'Note'] and  # Excluir notificaciones de Shopify
-                not 'Orden de Shopify procesada exitosamente' in (m.body or '') and  # Excluir mensajes específicos
-                not '<p> </p>' == (m.body or '') and  # Excluir mensajes vacíos
-                m.body  # Asegurar que hay contenido
-            )
-            
-            last_message = filtered_messages.sorted('date', reverse=True)[:1]
-            if last_message:
-                # Limpiamos el mensaje de tags HTML y lo simplificamos
+            messages = record.message_ids.filtered(lambda m: 
+                # Solo incluimos mensajes con cuerpo real
+                m.body and 
+                # Aseguramos que es un mensaje manual o una nota
+                m.message_type in ['comment', 'email', 'notification'] and 
+                # Excluimos mensajes específicos de Shopify
+                'Orden de Shopify' not in (m.body or '') and
+                # Verificamos que el mensaje tenga contenido real después de limpiar HTML
+                len(re.sub(r'<[^>]+>', '', m.body).strip()) > 0
+            ).sorted('date', reverse=True)
+
+            if messages:
+                last_message = messages[0]
+                # Limpieza del mensaje
                 clean_message = re.sub(r'<[^>]+>', '', last_message.body)
-                # Remover múltiples espacios y saltos de línea
-                clean_message = ' '.join(clean_message.split())
+                clean_message = re.sub(r'\s+', ' ', clean_message).strip()
+                
+                # Para debugging
+                _logger.info(f"Mensaje original: {last_message.body}")
+                _logger.info(f"Mensaje limpio: {clean_message}")
+                _logger.info(f"Tipo de mensaje: {last_message.message_type}")
+                
                 record.simplified_message = clean_message
                 record.message_detail = last_message.body
             else:
                 record.simplified_message = ''
                 record.message_detail = ''
-
 
     def action_open_uchat(self):
         """
