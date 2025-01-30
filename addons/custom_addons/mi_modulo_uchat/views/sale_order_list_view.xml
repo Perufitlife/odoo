@@ -10,7 +10,6 @@
                 <field name="partner_phone" widget="phone" optional="show"/>
                 <field name="products_summary" optional="show" string="Productos"/>
                 <field name="partner_city" string="Ciudad" optional="show"/>
-                <field name="commitment_date" optional="show" string="Fecha de Entrega"/>
                 <field name="simplified_message" optional="show" string="Último mensaje"/>
             </field>
             
