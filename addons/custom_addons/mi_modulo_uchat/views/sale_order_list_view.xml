@@ -12,7 +12,6 @@
                 <field name="partner_city" string="Ciudad" optional="show"/>
                 <field name="commitment_date" optional="show" string="Fecha de Entrega"/>
                 <field name="simplified_message" optional="show" string="Último mensaje"/>
-                <field name="amount_total" sum="Total" widget="monetary" optional="show"/>
             </field>
             
             <tree position="inside">
