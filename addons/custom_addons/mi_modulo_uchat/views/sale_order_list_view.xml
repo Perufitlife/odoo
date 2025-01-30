@@ -13,22 +13,37 @@
                 <field name="simplified_message" optional="show" string="Último mensaje"/>
             </field>
             
+            <!-- Campos invisibles -->
             <tree position="inside">
                 <field name="products_detail" invisible="1"/>
                 <field name="message_detail" invisible="1"/>
             </tree>
             
+            <!-- Decoración -->
             <tree position="attributes">
                 <attribute name="decoration-muted">state == 'cancel'</attribute>
                 <attribute name="js_class">sale_order_tree_with_tooltip</attribute>
             </tree>
             
+            <!-- Botones de acción -->
             <field name="activity_ids" position="after">
                 <button name="action_open_uchat" 
                         type="object" 
                         title="Abrir Chat"
                         icon="fa-whatsapp"
                         class="text-success"/>
+                <!-- Botón para confirmar -->
+                <button name="action_quick_confirm" 
+                        type="object" 
+                        string="✓"
+                        class="text-success px-3"
+                        attrs="{'invisible': [('state', 'not in', ['draft', 'sent'])]}"/>
+                <!-- Botón para cancelar -->
+                <button name="action_quick_cancel" 
+                        type="object" 
+                        string="✕"
+                        class="text-danger px-3"
+                        attrs="{'invisible': [('state', '=', 'cancel')]}"/>
             </field>
         </field>
     </record>

@@ -144,6 +144,34 @@ class SaleOrder(models.Model):
             'target': 'new',
         }
 
+    def action_quick_confirm(self):
+        self.ensure_one()
+        if not self.commitment_date:
+            return {
+                'name': 'Establecer Fecha de Entrega',
+                'type': 'ir.actions.act_window',
+                'res_model': 'delivery.date.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'active_id': self.id}
+            }
+        else:
+            # Verificar regla de precios
+            if not self.carrier_id and self.partner_id.l10n_pe_district:
+                return {
+                    'name': 'Configurar Courier',
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'quick.courier.wizard',
+                    'view_mode': 'form',
+                    'target': 'new',
+                    'context': {'active_id': self.id}
+                }
+            return self.action_confirm()
+
+    def action_quick_cancel(self):
+        return self.action_cancel()
+
+
     # -----------------------------
     # Métodos para cambiar de estado
     # -----------------------------
