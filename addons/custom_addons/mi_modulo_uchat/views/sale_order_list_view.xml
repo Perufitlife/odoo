@@ -8,23 +8,18 @@
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="partner_mobile" widget="phone" optional="show"/>
                 <field name="partner_phone" widget="phone" optional="show"/>
-                <field 
-                    name="products_summary" 
-                    optional="show" 
-                    string="Productos"
-                    title="products_detail"/>
+                <field name="products_summary" optional="show"/>
+                <field name="products_detail" invisible="1"/>
                 <field name="partner_city" string="Ciudad" optional="show"/>
                 <field name="commitment_date" optional="show" string="Fecha de Entrega"/>
-                <field 
-                    name="simplified_message" 
-                    optional="show" 
-                    string="Último mensaje"
-                    title="message_detail"/>
+                <field name="simplified_message" optional="show"/>
+                <field name="message_detail" invisible="1"/>
                 <field name="amount_total" sum="Total" widget="monetary" optional="show"/>
             </xpath>
             
             <xpath expr="//tree" position="attributes">
                 <attribute name="decoration-muted">state=='cancel'</attribute>
+                <attribute name="tooltip">products_detail</attribute>
             </xpath>
             
             <xpath expr="//field[@name='activity_ids']" position="after">
