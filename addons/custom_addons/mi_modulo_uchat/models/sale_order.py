@@ -70,19 +70,20 @@ class SaleOrder(models.Model):
     @api.depends('message_ids')
     def _compute_simplified_message(self):
         for record in self:
-            # Filtrar solo mensajes manuales (no automáticos)
-            # Los mensajes automáticos generalmente tienen tracking_value_ids o tienen subtype_id específicos
-            manual_messages = record.message_ids.filtered(lambda m: 
-                not m.tracking_value_ids and 
-                m.message_type in ['comment'] and
-                not m.subtype_id.internal
+            # Filtrar mensajes excluyendo los automáticos específicos
+            filtered_messages = record.message_ids.filtered(lambda m: 
+                not m.subtype_id.name in ['Shopify Notification', 'Note'] and  # Excluir notificaciones de Shopify
+                not 'Orden de Shopify procesada exitosamente' in (m.body or '') and  # Excluir mensajes específicos
+                not '<p> </p>' == (m.body or '') and  # Excluir mensajes vacíos
+                m.body  # Asegurar que hay contenido
             )
             
-            last_message = manual_messages.sorted('date', reverse=True)[:1]
-            if last_message and last_message.body:
+            last_message = filtered_messages.sorted('date', reverse=True)[:1]
+            if last_message:
                 # Limpiamos el mensaje de tags HTML y lo simplificamos
                 clean_message = re.sub(r'<[^>]+>', '', last_message.body)
-                clean_message = clean_message.replace('\n', ' ').strip()
+                # Remover múltiples espacios y saltos de línea
+                clean_message = ' '.join(clean_message.split())
                 record.simplified_message = clean_message
                 record.message_detail = last_message.body
             else:
