@@ -22,6 +22,25 @@ class SaleOrder(models.Model):
         readonly=True
     )
 
+    partner_city = fields.Char(
+        related='partner_id.city',
+        string='Ciudad',
+        store=True
+    )
+
+    last_message = fields.Text(
+        string='Último mensaje',
+        compute='_compute_last_message',
+        store=True
+    )
+
+    @api.depends('message_ids')
+    def _compute_last_message(self):
+        for record in self:
+            last_message = record.message_ids.sorted('date', reverse=True)[:1]
+            record.last_message = last_message.body if last_message else False
+
+
     def action_open_uchat(self):
         """
         Abre la ventana de conversación en UChat para el cliente relacionado a esta orden.
