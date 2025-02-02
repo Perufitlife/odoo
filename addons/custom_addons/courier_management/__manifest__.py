@@ -37,6 +37,8 @@
         'wizards/no_entregado_wizard_views.xml',
         'wizards/reprogramar_wizard_views.xml',
         'wizards/quick_courier_wizard_views.xml',
+        'wizards/delivery_method_wizard_views.xml',  # Nueva línea
+
         # 4. Vistas principales
         #    NOTA: Mueve "courier_shipment_views.xml" antes que "courier_carrier_views.xml"
         'views/courier_shipment_views.xml',    # define menu_courier_config

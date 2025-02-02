@@ -353,3 +353,19 @@ class SaleOrder(models.Model):
             else:
                 # No se encontró regla => podrías poner precio 0 o dejarla así
                 pass
+
+    def action_open_delivery_wizard(self):
+        self.ensure_one()
+        return {
+            'name': 'Configurar Entrega',
+            'type': 'ir.actions.act_window',
+            'res_model': 'delivery.method.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'active_id': self.id,
+                'active_model': 'sale.order',
+                'default_sale_order_id': self.id,
+                'default_carrier_id': self.carrier_id.id,
+            }
+        }

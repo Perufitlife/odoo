@@ -16,3 +16,6 @@ access_no_delivery_reason_user,no.delivery.reason.user,model_no_delivery_reason,
 access_reprogramar_wizard,reprogramar.wizard,model_reprogramar_wizard,base.group_user,1,1,1,1
 access_courier_shipment_product_summary,access_courier_shipment_product_summary,model_courier_shipment_product_summary,base.group_user,1,1,1,1
 access_quick_courier_wizard,quick.courier.wizard.user,model_quick_courier_wizard,base.group_user,1,1,1,1
+access_pickup_point_manager,pickup.point.manager,model_pickup_point,courier_management.group_courier_manager,1,1,1,1
+access_pickup_point_user,pickup.point.user,model_pickup_point,courier_management.group_courier_user,1,0,0,0
+access_delivery_method_wizard,access.delivery.method.wizard,model_delivery_method_wizard,base.group_user,1,1,1,1
