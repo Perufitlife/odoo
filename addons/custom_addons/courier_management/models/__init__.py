@@ -8,3 +8,4 @@ from . import res_city_district
 from . import partner
 from . import print_shipment_labels_wizard
 from . import no_delivery_reason
+from . import pickup_point  # Agregamos esta línea

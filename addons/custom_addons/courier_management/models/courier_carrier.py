@@ -18,6 +18,41 @@ class CourierCarrier(models.Model):
         string="Despacho Inmediato",
         help="Envío pasa directamente a 'in_transit' después de verificar stock"
     )
+
+    # Nuevos campos para manejo de puntos de recojo
+    has_pickup_points = fields.Boolean(
+        string="Tiene Puntos de Recojo",
+        help="Marcar si este courier tiene agencias o puntos de recojo físicos",
+        tracking=True
+    )
+
+    pickup_point_count = fields.Integer(
+        string='Puntos de Recojo',
+        compute='_compute_pickup_point_count'
+    )
+
+    pickup_point_ids = fields.One2many(
+        'pickup.point',
+        'carrier_id',
+        string='Puntos de Recojo'
+    )
+
+    @api.depends('pickup_point_ids')
+    def _compute_pickup_point_count(self):
+        for carrier in self:
+            carrier.pickup_point_count = len(carrier.pickup_point_ids)
+
+    def action_view_pickup_points(self):
+        self.ensure_one()
+        return {
+            'name': 'Puntos de Recojo',
+            'type': 'ir.actions.act_window',
+            'res_model': 'pickup.point',
+            'view_mode': 'tree,form',
+            'domain': [('carrier_id', '=', self.id)],
+            'context': {'default_carrier_id': self.id}
+        }
+
     
     # Campos computados
     pricing_rule_count = fields.Integer(

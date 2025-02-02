@@ -42,6 +42,7 @@
         'views/courier_shipment_views.xml',    # define menu_courier_config
         'views/courier_carrier_views.xml',     # usa parent="menu_courier_config"
         'views/courier_pricing_rule_views.xml',
+        'views/pickup_point_views.xml',        # Nueva vista para puntos de recojo
         'views/sale_order_inherit_views.xml',
         'views/sale_order_inherit_quotation_tree.xml',
 

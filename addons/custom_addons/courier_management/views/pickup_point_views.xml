@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Vista de búsqueda -->
+    <record id="view_pickup_point_search" model="ir.ui.view">
+        <field name="name">pickup.point.search</field>
+        <field name="model">pickup.point</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="carrier_id"/>
+                <field name="state_id"/>
+                <field name="city_id"/>
+                <field name="district_id"/>
+                <separator/>
+                <filter string="Activos" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Inactivos" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Courier" name="group_carrier" context="{'group_by': 'carrier_id'}"/>
+                    <filter string="Departamento" name="group_state" context="{'group_by': 'state_id'}"/>
+                    <filter string="Provincia" name="group_city" context="{'group_by': 'city_id'}"/>
+                    <filter string="Distrito" name="group_district" context="{'group_by': 'district_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista de lista -->
+    <record id="view_pickup_point_tree" model="ir.ui.view">
+        <field name="name">pickup.point.tree</field>
+        <field name="model">pickup.point</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="carrier_id"/>
+                <field name="state_id"/>
+                <field name="city_id"/>
+                <field name="district_id"/>
+                <field name="delivery_fee" widget="monetary"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista de formulario -->
+    <record id="view_pickup_point_form" model="ir.ui.view">
+        <field name="name">pickup.point.form</field>
+        <field name="model">pickup.point</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-archive">
+                            <field name="active" widget="boolean_toggle"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre de la agencia"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="carrier_id" options="{'no_create': True}"/>
+                            <field name="state_id" options="{'no_create': True}"/>
+                            <field name="city_id" options="{'no_create': True}"/>
+                            <field name="district_id" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="delivery_fee" widget="monetary"/>
+                            <field name="currency_id" groups="base.group_multi_currency"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Dirección" name="address">
+                            <field name="address" placeholder="Dirección detallada del punto de recojo..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción de ventana -->
+    <record id="action_pickup_point" model="ir.actions.act_window">
+        <field name="name">Puntos de Recojo</field>
+        <field name="res_model">pickup.point</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_pickup_point_search"/>
+        <field name="context">{"search_default_active": 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registra tu primer punto de recojo
+            </p>
+            <p>
+                Crea puntos de recojo para los couriers que ofrecen este servicio.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú -->
+    <menuitem id="menu_pickup_point"
+              name="Puntos de Recojo"
+              parent="menu_courier_config"
+              action="action_pickup_point"
+              sequence="25"/>
+</odoo>
