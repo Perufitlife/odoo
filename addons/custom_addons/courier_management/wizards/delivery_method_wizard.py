@@ -83,8 +83,8 @@ class DeliveryMethodWizard(models.TransientModel):
                 'l10n_pe_district': pickup_point.district_id.id,
             })
 
-            # Actualizar el precio de envío
-            values['delivery_price'] = pickup_point.delivery_fee
+            # Actualizar el costo de envío usando el método adecuado de sale.order
+            sale_order.set_delivery_line(self.carrier_id, pickup_point.delivery_fee)
 
         # Confirmar la orden
         sale_order.write(values)
