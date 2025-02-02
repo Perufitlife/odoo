@@ -1,29 +1,32 @@
-<record id="view_order_form_inherit_delivery_address" model="ir.ui.view">
-    <field name="name">sale.order.form.inherit.delivery.address</field>
-    <field name="model">sale.order</field>
-    <field name="inherit_id" ref="sale.view_order_form"/>
-    <field name="arch" type="xml">
-        <!-- Agregamos el botón en el header -->
-        <xpath expr="//header" position="inside">
-            <button name="action_open_delivery_wizard" 
-                    type="object" 
-                    string="Configurar Entrega"
-                    attrs="{'invisible': [('state', 'not in', ['draft', 'sent'])]}"
-                    class="btn-primary"/>
-        </xpath>
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_order_form_inherit_delivery_address" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.delivery.address</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Agregamos el botón en el header -->
+            <xpath expr="//header" position="inside">
+                <button name="action_open_delivery_wizard" 
+                        type="object" 
+                        string="Configurar Entrega"
+                        attrs="{'invisible': [('state', 'not in', ['draft', 'sent'])]}"
+                        class="btn-primary"/>
+            </xpath>
 
-        <!-- Campos existentes -->
-        <field name="partner_id" position="after">
-            <field name="partner_district" string="Distrito"/>
-            <field name="partner_phone" string="Teléfono"/>
-            <field name="shopify_store_id" string="Shopify Store"/>
-            <field name="commitment_date" string="Delivery Date"/>
-            <field name="x_initial_status" string="Estado Inicial"/>
-            <field name="partner_shipping_id"
-                   context="{'default_type': 'delivery'}"
-                   options="{'no_open': False, 'no_create_edit': False}"
-                   domain="[('parent_id','=', partner_id), ('type','=','delivery')]"/>
-            <field name="carrier_id" options="{'no_create': True}"/>
+            <!-- Campos existentes -->
+            <field name="partner_id" position="after">
+                <field name="partner_district" string="Distrito"/>
+                <field name="partner_phone" string="Teléfono"/>
+                <field name="shopify_store_id" string="Shopify Store"/>
+                <field name="commitment_date" string="Delivery Date"/>
+                <field name="x_initial_status" string="Estado Inicial"/>
+                <field name="partner_shipping_id"
+                    context="{'default_type': 'delivery'}"
+                    options="{'no_open': False, 'no_create_edit': False}"
+                    domain="[('parent_id','=', partner_id), ('type','=','delivery')]"/>
+                <field name="carrier_id" options="{'no_create': True}"/>
+            </field>
         </field>
-    </field>
-</record>
+    </record>
+</odoo>
